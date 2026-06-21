@@ -21,7 +21,7 @@ def run(directory: str, pattern: str, cwd: str) -> str:
 class GlobTool(Tool):
     name = "Glob"
     description: str = Tool.load_desc(Path(__file__).parent / "glob.md")
-        parameters = {
+    parameters = {
             "type": "object",
             "properties": {
                 "directory": {

@@ -82,7 +82,7 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
 
     @server.tool()
     async def info(path: str) -> str:
-        """Summarize file or directory. Returns purpose, key functions/classes, deps. Use instead of Read for quick understanding."""
+        """Read file or list directory. Small files: full code. Large files: chunked at logical boundaries (~3K tokens each). Directories: file listing."""
         target = (cwd / path).resolve()
         if not str(target).startswith(str(cwd)):
             return f"Error: path must be within work directory"

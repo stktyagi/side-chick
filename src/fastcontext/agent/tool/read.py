@@ -12,7 +12,7 @@ MAX_LINE_LENGTH = 2000
 class ReadTool(Tool):
     name = "Read"
     description: str = Tool.load_desc(Path(__file__).parent / "read.md")
-        parameters = {
+    parameters = {
             "type": "object",
             "properties": {
                 "path": {

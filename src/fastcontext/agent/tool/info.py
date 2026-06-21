@@ -6,10 +6,11 @@ from fastcontext.agent.tool.tool import Tool
 from fastcontext.indexer.summarizer import summarize_file, summarize_dir
 
 _INFO_DESC = (
-    "Summarize file or directory. Returns purpose, key functions/classes, deps. "
-    "Use instead of Read for quick understanding. "
-    "Path: relative to work dir. "
-    "File: structural overview. Dir: lists contents + purpose."
+    "Read file or list directory. "
+    "Small files (<=100 lines): returns full raw code. "
+    "Large files: returns code split into chunks (~3K tokens each) at function/class boundaries. "
+    "Directories: lists contents with file sizes. "
+    "Use this as your primary file reader — it returns actual code content."
 )
 
 _INFO_PARAMS = {
