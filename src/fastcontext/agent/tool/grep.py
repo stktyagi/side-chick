@@ -12,53 +12,53 @@ class GrepTool(Tool):
         "properties": {
             "pattern": {
                 "type": "string",
-                "description": "The regular expression pattern to search for in file contents",
+                "description": "Regex pattern to search.",
             },
             "path": {
                 "type": "string",
-                "description": "File or directory to search in (rg pattern -- PATH). Defaults to current working directory.",
+                "description": "File/dir to search (rg pattern -- PATH). Default: cwd.",
             },
             "glob": {
                 "type": "string",
-                "description": 'Glob pattern to filter files (e.g. "*.js", "*.{ts,tsx}") - maps to rg --glob',
+                "description": 'Glob filter (e.g. "*.js", "*.{ts,tsx}") → rg --glob',
             },
             "output_mode": {
                 "type": "string",
                 "enum": ["content", "files_with_matches", "count"],
-                "description": 'Output mode: "content" shows matching lines (supports -A/-B/-C context, -n line numbers, head_limit), "files_with_matches" shows file paths (supports head_limit), "count" shows match counts (supports head_limit). Defaults to "files_with_matches".',
+                "description": 'content=matching lines, files_with_matches=paths only, count=match counts',
             },
             "-B": {
                 "type": "number",
-                "description": 'Number of lines to show before each match (rg -B). Requires output_mode: "content", ignored otherwise.',
+                "description": "Lines before match (rg -B). Requires output_mode: content.",
             },
             "-A": {
                 "type": "number",
-                "description": 'Number of lines to show after each match (rg -A). Requires output_mode: "content", ignored otherwise.',
+                "description": "Lines after match (rg -A). Requires output_mode: content.",
             },
             "-C": {
                 "type": "number",
-                "description": 'Number of lines to show before and after each match (rg -C). Requires output_mode: "content", ignored otherwise.',
+                "description": "Context lines before+after (rg -C). Requires output_mode: content.",
             },
             "-n": {
                 "type": "boolean",
-                "description": 'Show line numbers in output (rg -n). Requires output_mode: "content", ignored otherwise. Defaults to true.',
+                "description": "Show line numbers (rg -n). Requires output_mode: content.",
             },
             "-i": {
                 "type": "boolean",
-                "description": "Case insensitive search (rg -i)",
+                "description": "Case insensitive (rg -i).",
             },
             "type": {
                 "type": "string",
-                "description": "File type to search (rg --type). Common types: js, py, rust, go, java, etc. More efficient than include for standard file types.",
+                "description": "File type filter (rg --type): js, py, rust, go, java, etc.",
             },
             "head_limit": {
                 "type": "number",
                 "minimum": 0,
-                "description": 'Limit output to first N lines/entries, equivalent to "| head -N". Works across all output modes: content (limits output lines), files_with_matches (limits file paths), count (limits count entries). When unspecified, shows all results from ripgrep.',
+                "description": 'Limit output to first N lines/files/counts = "| head -N".',
             },
             "multiline": {
                 "type": "boolean",
-                "description": "Enable multiline mode where . matches newlines and patterns can span lines (rg -U --multiline-dotall). Default: false.",
+                "description": "Multiline mode, . matches newlines (rg -U --multiline-dotall).",
             },
         },
         "required": ["pattern"],

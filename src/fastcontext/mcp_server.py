@@ -37,14 +37,11 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
         max_turns: int = 16,
         citation: bool = True,
     ) -> str:
-        """Explore a codebase using natural language.
-
-        The agent will read files, search for patterns, and traverse the
-        codebase to answer your question. Returns file:line citations.
+        """Explore codebase via natural language. Agent reads files, searches patterns, returns file:line findings.
 
         Args:
             query: Natural language question about the codebase.
-            max_turns: Maximum agent exploration turns (default 8).
+            max_turns: Max agent exploration turns (default 8).
             citation: If true, returns only the <final_answer> block.
         """
         from fastcontext.agent.agent_factory import make_fastcontext_agent
