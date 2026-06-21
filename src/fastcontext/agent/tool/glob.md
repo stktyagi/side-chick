@@ -1,1 +1,1 @@
-Fast file pattern match (glob). Patterns: src/**/*.ts. Returns paths. Name lookup→glob. Open-ended search→Agent. Parallel ok.
+Fast glob match (src/**/*.ts). Returns paths. Name lookup→glob. Parallel ok.

@@ -1,1 +1,1 @@
-Regex search via ripgrep. glob/type filters. output_mode: content/files_with_matches/count. multiline for cross-line patterns. -A/-B/-C for context. -i for case-insensitive. head_limit for truncation.
+Regex via rg. glob/type filters. -A/-B/-C context. -i case. multiline. head_limit trunc.

@@ -1,1 +1,1 @@
-Read file from filesystem. offset/limit for long files (default: whole file). Output: LINE_NUMBER|LINE_CONTENT. Trunc at 500 chars/2000 lines. Parallel reads ok. Empty file → "File is empty."
+Read file content. offset/limit for partial. LINE_NUM|content format. Trunc at 500c/2000L.

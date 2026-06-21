@@ -25,9 +25,10 @@ def make_fastcontext_agent(
 
     from fastcontext.agent.tool.glob import GlobTool
     from fastcontext.agent.tool.grep import GrepTool
+    from fastcontext.agent.tool.info import InfoTool
     from fastcontext.agent.tool.read import ReadTool
 
-    toolset = ToolSet([ReadTool(), GlobTool(), GrepTool()], work_dir=work_dir)
+    toolset = ToolSet([InfoTool(), ReadTool(), GlobTool(), GrepTool()], work_dir=work_dir)
     return Agent(
         name=name,
         system_prompt=system_prompt,

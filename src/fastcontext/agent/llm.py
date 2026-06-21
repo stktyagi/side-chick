@@ -92,7 +92,9 @@ class LLM:
 
                 response = call_completion(model=self.model, messages=messages, tools=tools)
             else:
+                print(f"DEBUG LLM: calling {self.model} with {len(messages)} msgs, tools={'yes' if tools else 'no'}")
                 response = await self.client.chat.completions.create(**payload)
+                print(f"DEBUG LLM: got response, choices={len(response.choices)}")
             usage = response.usage.to_dict()
             content = None
             reasoning_content = None
