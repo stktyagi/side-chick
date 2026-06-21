@@ -1,4 +1,4 @@
-"""FastContext MCP Server — single `query` tool over localhost HTTP/SSE.
+"""FastContext MCP Server — exposes `task` + `info` tools over localhost HTTP/SSE.
 
 Configurable via env vars (same as original FastContext):
   MODEL, API_KEY, BASE_URL
@@ -61,12 +61,12 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
     server = FastMCP(_SERVER_NAME, host=host, port=port)
 
     @server.tool()
-    async def fastcontext_query(
+    async def task(
         query: str,
         max_turns: int = 16,
         citation: bool = True,
     ) -> str:
-        """Explore codebase via natural language. Agent reads files, searches patterns, returns file:line findings.
+        """Multi-step codebase exploration & research via sub-agent. Preferred over calling glob/grep/explore directly for any non-trivial question. Decomposes complex queries, searches patterns, reads relevant files, returns structured findings with file:line citations.
 
         Args:
             query: Natural language question about the codebase.
@@ -82,7 +82,7 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
 
     @server.tool()
     async def info(path: str) -> str:
-        """Read file or list directory. Small files: full code. Large files: chunked at logical boundaries (~3K tokens each). Directories: file listing."""
+        """Read file or list directory with smart summarization. Preferred over direct read for understanding code structure — returns LLM-friendly summaries with key context. Use raw read tool only when exact line-by-line content is needed (e.g., for edits). Small files: full code. Large files: chunked at logical boundaries. Directories: file listing."""
         target = (cwd / path).resolve()
         if not str(target).startswith(str(cwd)):
             return f"Error: path must be within work directory"

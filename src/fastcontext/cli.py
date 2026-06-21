@@ -25,7 +25,7 @@ def main():
     parser.add_argument("--citation", action="store_true", help="Only return the citations in the final answer")
 
     sub = parser.add_subparsers(dest="command", title="commands")
-    mcp_p = sub.add_parser("mcp", help="Start MCP server over HTTP/SSE (Read/Glob/Grep tools)")
+    mcp_p = sub.add_parser("mcp", help="Start MCP server over HTTP/SSE (task + info tools)")
     mcp_p.add_argument("--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1)")
     mcp_p.add_argument("--port", "-p", type=int, default=8931, help="Port (default: 8931)")
     mcp_p.add_argument("--work-dir", "-w", default=None, help="Working directory (default: cwd)")
