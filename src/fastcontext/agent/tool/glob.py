@@ -21,20 +21,20 @@ def run(directory: str, pattern: str, cwd: str) -> str:
 class GlobTool(Tool):
     name = "Glob"
     description: str = Tool.load_desc(Path(__file__).parent / "glob.md")
-    parameters = {
-        "type": "object",
-        "properties": {
-            "directory": {
-                "type": "string",
-                "description": "The absolute path of the directory to search in. If not provided, the current working directory will be used.",
+        parameters = {
+            "type": "object",
+            "properties": {
+                "directory": {
+                    "type": "string",
+                    "description": "Absolute dir path to search (default: cwd).",
+                },
+                "pattern": {
+                    "type": "string",
+                    "description": "Glob pattern (e.g. **/*.ts).",
+                },
             },
-            "pattern": {
-                "type": "string",
-                "description": "The glob pattern to match files or directories.",
-            },
-        },
-        "required": ["pattern"],
-    }
+            "required": ["pattern"],
+        }
 
     async def call(self, parameters: str, **kwargs) -> str:
         cwd = kwargs.get("cwd", Path.cwd().as_posix())

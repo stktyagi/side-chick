@@ -12,24 +12,24 @@ MAX_LINE_LENGTH = 2000
 class ReadTool(Tool):
     name = "Read"
     description: str = Tool.load_desc(Path(__file__).parent / "read.md")
-    parameters = {
-        "type": "object",
-        "properties": {
-            "path": {
-                "type": "string",
-                "description": "The absolute path of the file to read.",
+        parameters = {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Absolute path of file to read.",
+                },
+                "offset": {
+                    "type": "integer",
+                    "description": "Line to start from. Positive=1-indexed from start, negative=count from end. For large files.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Number of lines to read. For large files.",
+                },
             },
-            "offset": {
-                "type": "integer",
-                "description": "The line number to start reading from. Positive values are 1-indexed from the start of the file. Negative values count backwards from the end (e.g. -1 is the last line). Only provide if the file is too large to read at once.",
-            },
-            "limit": {
-                "type": "integer",
-                "description": "The number of lines to read. Only provide if the file is too large to read at once.",
-            },
-        },
-        "required": ["path"],
-    }
+            "required": ["path"],
+        }
 
     async def call(self, parameters: str, **kwargs) -> str:
         params: dict = json.loads(parameters)
