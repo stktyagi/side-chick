@@ -1,6 +1,7 @@
 """Generates token-efficient summaries for files and directories using LLM."""
 
 import hashlib
+import logging
 import os
 import re
 import subprocess
@@ -18,6 +19,8 @@ _CHUNK_SIZE_TOKENS = int(os.getenv("FASTCONTEXT_CHUNK_SIZE", "3000"))
 _CHUNK_OVERLAP_TOKENS = int(os.getenv("FASTCONTEXT_CHUNK_OVERLAP", "200"))
 # Rough token estimate: ~4 chars/token for code
 _CHARS_PER_TOKEN = 4
+
+logger = logging.getLogger(__name__)
 
 
 def _get_llm() -> LLM:
@@ -123,6 +126,43 @@ def chunk_text(text: str, rel_path: str, chunk_tokens: int | None = None, overla
         start_line = max(start_line + 1, ol_start + 1)
 
     return "\n\n".join(chunks_out)
+
+
+def _split_chunk_text(text: str, rel_path: str) -> list[str]:
+    """Split file text into chunks. Returns list of raw chunk strings (no headers)."""
+    chunk_tokens = _CHUNK_SIZE_TOKENS
+    lines = text.splitlines(keepends=True)
+    line_tokens = [max(1, len(l) // _CHARS_PER_TOKEN) for l in lines]
+
+    chunks: list[str] = []
+    start_line = 0
+    while start_line < len(lines):
+        end_line = start_line
+        accum = 0
+        while end_line < len(lines) and accum < chunk_tokens:
+            accum += line_tokens[end_line]
+            end_line += 1
+
+        if end_line < len(lines):
+            search_start = max(start_line, end_line - min(30, max(1, end_line - start_line) // 4))
+            best = _find_chunk_split(lines, search_start, end_line)
+            if best is not None:
+                end_line = best
+
+        chunk_str = "".join(lines[start_line:end_line])
+        chunks.append(chunk_str)
+
+        # next chunk with overlap
+        if end_line >= len(lines):
+            break
+        overlap_tok_needed = _CHUNK_OVERLAP_TOKENS
+        ol_start = end_line - 1
+        while ol_start > start_line and overlap_tok_needed > 0:
+            overlap_tok_needed -= line_tokens[ol_start]
+            ol_start -= 1
+        start_line = max(start_line + 1, ol_start + 1)
+
+    return chunks
 
 
 def _is_binary(path: Path) -> bool:
@@ -241,7 +281,7 @@ async def summarize_file(path: Path, rel_path: str) -> str:
     """Generate a token-efficient summary of a file.
 
     Small files (<= SMALL_FILE_LINES) → raw code.
-    Larger files → chunked at logical boundaries (no LLM).
+    Larger files → LLM summary from chunks.
     """
     text = path.read_text(encoding="utf-8", errors="replace")
     lines = text.splitlines()
@@ -250,8 +290,46 @@ async def summarize_file(path: Path, rel_path: str) -> str:
     if len(lines) <= SMALL_FILE_LINES:
         return f"```{rel_path}\n{text}```"
 
-    # Use chunking instead of LLM summarization — avoids hallucination
-    return chunk_text(text, rel_path)
+    # Large file: use LLM to generate a real summary from the chunks
+    llm = _get_llm()
+    try:
+        # Try single-pass LLM summarization first
+        chunked = chunk_text(text, rel_path)
+        total_est = _est_tokens(chunked)
+        # If chunks fit in context (~32K), summarize directly
+        if total_est < 28000:
+            msgs = [
+                Message(role="system", content=FILE_SUMMARY_SYSTEM_PROMPT),
+                Message(role="user", content=chunked),
+            ]
+            result = await llm.acall(msgs, None)
+            return result.content
+
+        # Very large file: per-chunk summary then combine
+        chunks = _split_chunk_text(text, rel_path)
+        summaries: list[str] = []
+        for i, chunk in enumerate(chunks):
+            header = f"FILE: {rel_path}  (chunk {i+1}/{len(chunks)})"
+            msgs = [
+                Message(role="system", content=FILE_SUMMARY_SYSTEM_PROMPT),
+                Message(role="user", content=f"{header}\n```\n{chunk}\n```"),
+            ]
+            result = await llm.acall(msgs, None)
+            summaries.append(result.content)
+
+        # Combine chunk summaries into a final digest
+        combined = "\n\n---\n\n".join(summaries)
+        merge_msgs = [
+            Message(role="system", content=FILE_SUMMARY_SYSTEM_PROMPT),
+            Message(role="user", content=f"Aggregated summaries for {rel_path} ({len(chunks)} chunks):\n\n{combined}"),
+        ]
+        final = await llm.acall(merge_msgs, None)
+        return final.content
+
+    except Exception as e:
+        # Fallback: return raw text
+        logger.warning("LLM summarization failed for %s: %s", rel_path, e)
+        return chunk_text(text, rel_path)
 
 
 async def summarize_dir(path: Path, rel_path: str) -> str:

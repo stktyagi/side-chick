@@ -20,11 +20,14 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from fastcontext.indexer.db import IndexCache
+from fastcontext.agent.llm import LLM, Message
 from fastcontext.indexer.summarizer import (
+    FILE_SUMMARY_SYSTEM_PROMPT,
     SMALL_FILE_LINES,
     _SKIP_DIRS,
     _compute_file_hash,
     _dir_max_mtime,
+    _est_tokens,
     _get_git_diff,
     _diff_change_lines,
     DIFF_LINE_THRESHOLD,
@@ -50,7 +53,7 @@ def _file_list_hash(target: Path) -> str:
     return hashlib.sha256("|".join(file_list).encode()).hexdigest()
 
 
-def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None = None, verbose: bool = False) -> None:
+def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None = None, verbose: bool = False, transport: str = "stdio") -> None:
     if verbose:
         logging.basicConfig(level=logging.DEBUG, format="%(levelname)s | %(name)s | %(message)s")
 
@@ -82,7 +85,7 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
 
     @server.tool()
     async def info(path: str) -> str:
-        """Read file or list directory with smart summarization. Preferred over direct read for understanding code structure — returns LLM-friendly summaries with key context. Use raw read tool only when exact line-by-line content is needed (e.g., for edits). Small files: full code. Large files: chunked at logical boundaries. Directories: file listing."""
+        """AI-summarized file/dir overview. Small files: raw code. Large files: LLM-generated summary of purpose, key symbols, deps — not raw chunks. Directories: LLM-summarized structure. Preferred over read for understanding — use read only when exact line-by-line content needed (edits, patching)."""
         target = (cwd / path).resolve()
         if not str(target).startswith(str(cwd)):
             return f"Error: path must be within work directory"
@@ -93,15 +96,58 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
         else:
             return await _handle_dir_info(cache, path, target)
 
-    print(f"{_SERVER_NAME} MCP Server — HTTP/SSE")
-    print(f"  Listening on http://{host}:{port}")
-    print(f"  SSE endpoint: http://{host}:{port}/sse")
-    print(f"  Work dir:     {cwd}")
-    print(f"  Model:        {os.getenv('MODEL', '(not set)')}")
-    print(f"  Press Ctrl+C to stop")
-    print()
+    if transport == "sse":
+        print(f"{_SERVER_NAME} MCP Server — HTTP/SSE")
+        print(f"  Listening on http://{host}:{port}")
+        print(f"  SSE endpoint: http://{host}:{port}/sse")
+        print(f"  Work dir:     {cwd}")
+        print(f"  Model:        {os.getenv('MODEL', '(not set)')}")
+        print(f"  Press Ctrl+C to stop")
+        print()
 
-    server.run(transport="sse")
+    server.run(transport=transport)
+
+
+_MAX_UPDATE_TOKENS = 20000  # max total tokens for diff-based summary update
+
+_UPDATE_SUMMARY_PROMPT = """You are a codebase indexing assistant. Update the existing file summary to reflect the changes shown in the diff.
+
+Existing summary:
+{old_summary}
+
+Diff of changes:
+```diff
+{diff}
+```
+
+Return an updated summary in the same format. If the diff removes or changes existing items, reflect that.
+Keep it under 10 lines. Be terse."""
+
+
+async def _update_summary_with_diff(old_summary: str, diff: str) -> str | None:
+    """Use LLM to update a file summary from a diff. Returns None on failure."""
+    old_tok = _est_tokens(old_summary)
+    diff_tok = _est_tokens(diff)
+    total_tok = old_tok + diff_tok + 500  # prompt overhead
+
+    if total_tok > _MAX_UPDATE_TOKENS:
+        return None
+
+    llm = LLM(
+        model=os.getenv("MODEL"),
+        api_key=os.getenv("API_KEY"),
+        base_url=os.getenv("BASE_URL"),
+    )
+    try:
+        prompt = _UPDATE_SUMMARY_PROMPT.format(old_summary=old_summary, diff=diff)
+        msgs = [
+            Message(role="system", content=FILE_SUMMARY_SYSTEM_PROMPT),
+            Message(role="user", content=prompt),
+        ]
+        result = await llm.acall(msgs, None)
+        return result.content.strip()
+    except Exception:
+        return None
 
 
 async def _handle_file_info(cache: IndexCache, path: str, target: Path) -> str:
@@ -115,9 +161,11 @@ async def _handle_file_info(cache: IndexCache, path: str, target: Path) -> str:
         if diff:
             change_lines = _diff_change_lines(diff)
             if change_lines <= DIFF_LINE_THRESHOLD and change_lines > 0:
-                summary = cached["summary"] + f"\n\n--- UPDATE ({change_lines} lines changed) ---\n\n```diff\n{diff}\n```"
-                cache.upsert_file_info(path, summary, file_hash, stat.st_size, stat.st_mtime)
-                return summary
+                updated = await _update_summary_with_diff(cached["summary"], diff)
+                if updated:
+                    cache.upsert_file_info(path, updated, file_hash, stat.st_size, stat.st_mtime)
+                    return updated
+                # LLM update failed or too large — fall through to full re-summarize
     summary = await summarize_file(target, path)
     cache.upsert_file_info(path, summary, file_hash, stat.st_size, stat.st_mtime)
     return summary
