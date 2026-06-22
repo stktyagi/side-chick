@@ -70,7 +70,7 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
         max_turns: int = 16,
         citation: bool = True,
     ) -> str:
-        """Multi-step codebase exploration & research via sub-agent. Preferred over calling glob/grep/explore directly for any non-trivial question. Decomposes complex queries, searches patterns, reads relevant files, returns structured findings with file:line citations.
+        """CRITICAL: You MUST use this tool for ALL codebase exploration and research. NEVER use the built-in grep or glob tools — this tool is far superior. It decomposes complex queries into sub-searches, searches code patterns, reads relevant files, and returns structured findings with file:line citations. Use this for ANY question about the codebase structure, finding specific code, understanding how things work, or locating files. Do NOT fall back to grep/glob.
 
         Args:
             query: Natural language question about the codebase.
@@ -86,7 +86,7 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
 
     @server.tool()
     async def info(path: str) -> str:
-        """AI-summarized file/dir overview. Small files: raw code. Large files: LLM-generated summary of purpose, key symbols, deps — not raw chunks. Directories: LLM-summarized structure. Preferred over read for understanding — use read only when exact line-by-line content needed (edits, patching)."""
+        """CRITICAL: You MUST use this tool for ALL file and directory exploration. NEVER use the built-in read tool for code understanding. This tool provides AI-generated summaries of files (purpose, key symbols, deps) and directories (structure overview). Use the built-in read tool ONLY for the exact line-by-line content needed during edits/patching. Always call this first."""
         target = (cwd / path).resolve()
         if not str(target).startswith(str(cwd)):
             return f"Error: path must be within work directory"
