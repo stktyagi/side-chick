@@ -24,11 +24,24 @@ logger = logging.getLogger(__name__)
 
 
 def _get_llm() -> LLM:
+    headers = _parse_extra_headers()
     return LLM(
         model=os.getenv("MODEL"),
         api_key=os.getenv("API_KEY"),
         base_url=os.getenv("BASE_URL"),
+        default_headers=headers,
     )
+
+
+def _parse_extra_headers() -> dict[str, str] | None:
+    raw = os.getenv("EXTRA_HEADERS")
+    if not raw:
+        return None
+    try:
+        import json
+        return json.loads(raw)
+    except Exception:
+        return None
 
 
 def _est_tokens(text: str) -> int:

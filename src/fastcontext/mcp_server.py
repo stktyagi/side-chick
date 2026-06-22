@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import hashlib
+import json
 import logging
 import os
 from datetime import datetime
@@ -124,6 +125,16 @@ Return an updated summary in the same format. If the diff removes or changes exi
 Keep it under 10 lines. Be terse."""
 
 
+def _parse_extra_headers() -> dict[str, str] | None:
+    raw = os.getenv("EXTRA_HEADERS")
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except Exception:
+        return None
+
+
 async def _update_summary_with_diff(old_summary: str, diff: str) -> str | None:
     """Use LLM to update a file summary from a diff. Returns None on failure."""
     old_tok = _est_tokens(old_summary)
@@ -137,6 +148,7 @@ async def _update_summary_with_diff(old_summary: str, diff: str) -> str | None:
         model=os.getenv("MODEL"),
         api_key=os.getenv("API_KEY"),
         base_url=os.getenv("BASE_URL"),
+        default_headers=_parse_extra_headers(),
     )
     try:
         prompt = _UPDATE_SUMMARY_PROMPT.format(old_summary=old_summary, diff=diff)

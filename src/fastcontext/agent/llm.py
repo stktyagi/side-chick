@@ -51,7 +51,8 @@ class LLM:
     def __init__(self, model: str, api_key: str, base_url: str, **kwargs) -> None:
         self.model = model
         self.base_url = base_url
-        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        default_headers = kwargs.get("default_headers", None)
+        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url, default_headers=default_headers)
         self.max_tokens = kwargs.get("max_tokens", 32_000)
         self.temperature = kwargs.get("temperature", 1.0)
         self.top_p = kwargs.get("top_p", 0.95)
