@@ -10,12 +10,15 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import asyncio
 import logging
 import os
 from datetime import datetime
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
+
+from fastcontext.agent.utils import get_final_answer
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +37,7 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
         query: str,
         max_turns: int = 16,
         citation: bool = True,
+        timeout: int | None = None,
     ) -> str:
         """CRITICAL: You MUST use this tool for ALL codebase exploration and research. NEVER use the built-in grep or glob tools — this tool is far superior. It decomposes complex queries into sub-searches, searches code patterns, reads relevant files, and returns structured findings with file:line citations. Use this for ANY question about the codebase structure, finding specific code, understanding how things work, or locating files. Do NOT fall back to grep/glob.
 
@@ -41,12 +45,24 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
             query: Natural language question about the codebase.
             max_turns: Max agent exploration turns (default 8).
             citation: If true, returns only the <final_answer> block.
+            timeout: Max seconds before giving up (default: no limit).
         """
         from fastcontext.agent.agent_factory import make_fastcontext_agent
 
         traj = f".fastcontext/mcp_trajectory_{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.jsonl"
         agent = make_fastcontext_agent(trajectory_file=traj, work_dir=str(cwd))
-        result = await agent.run(prompt=query, max_turns=max_turns, verbose=verbose, citation=citation)
+        try:
+            if timeout and timeout > 0:
+                result = await asyncio.wait_for(
+                    agent.run(prompt=query, max_turns=max_turns, verbose=verbose, citation=citation),
+                    timeout=timeout,
+                )
+            else:
+                result = await agent.run(prompt=query, max_turns=max_turns, verbose=verbose, citation=citation)
+        except asyncio.TimeoutError:
+            return "Task timed out. Try a more focused query, reduce max_turns, or increase the timeout."
+        if citation:
+            return get_final_answer(result)
         return result
 
     if transport == "sse":
