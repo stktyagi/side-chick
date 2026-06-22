@@ -1,0 +1,16 @@
+{
+  "commit": "7d51b709262c5aa31d2b9cd31444112c1b2dae03",
+  "parent": "7d51b709262c5aa31d2b9cd31444112c1b2dae03^1",
+  "date": "2025-12-24 12:53:28 +0200",
+  "subject": "phy: qcom: edp: Make the number of clocks flexible",
+  "files_changed": 1,
+  "file_list": [
+    "drivers/phy/qualcomm/phy-qcom-edp.c"
+  ],
+  "insertions": 8,
+  "deletions": 8,
+  "total_lines": 16,
+  "expected_diff": "diff --git a/drivers/phy/qualcomm/phy-qcom-edp.c b/drivers/phy/qualcomm/phy-qcom-edp.c\nindex f1b5101868..06a08c9ea0 100644\n--- a/drivers/phy/qualcomm/phy-qcom-edp.c\n+++ b/drivers/phy/qualcomm/phy-qcom-edp.c\n@@ -103,7 +103,9 @@ struct qcom_edp {\n \n \tstruct phy_configure_opts_dp dp_opts;\n \n-\tstruct clk_bulk_data clks[2];\n+\tstruct clk_bulk_data *clks;\n+\tint num_clks;\n+\n \tstruct regulator_bulk_data supplies[2];\n \n \tbool is_edp;\n@@ -218,7 +220,7 @@ static int qcom_edp_phy_init(struct phy *phy)\n \tif (ret)\n \t\treturn ret;\n \n-\tret = clk_bulk_prepare_enable(ARRAY_SIZE(edp->clks), edp->clks);\n+\tret = clk_bulk_prepare_enable(edp->num_clks, edp->clks);\n \tif (ret)\n \t\tgoto out_disable_supplies;\n \n@@ -885,7 +887,7 @@ static int qcom_edp_phy_exit(struct phy *phy)\n {\n \tstruct qcom_edp *edp = phy_get_drvdata(phy);\n \n-\tclk_bulk_disable_unprepare(ARRAY_SIZE(edp->clks), edp->clks);\n+\tclk_bulk_disable_unprepare(edp->num_clks, edp->clks);\n \tregulator_bulk_disable(ARRAY_SIZE(edp->supplies), edp->supplies);\n \n \n... [truncated]",
+  "description": "Change the clock data structure from fixed array to dynamic allocation to accommodate variable clock counts.",
+  "classifier": "deepseek-v4-flash-free"
+}

@@ -1,0 +1,16 @@
+{
+  "commit": "d077e8119ddbb4fca67540f1a52453631a47f221",
+  "parent": "d077e8119ddbb4fca67540f1a52453631a47f221^1",
+  "date": "2025-12-24 12:48:26 +0000",
+  "subject": "netfilter: nf_tables: fix memory leak in nf_tables_newrule()",
+  "files_changed": 1,
+  "file_list": [
+    "net/netfilter/nf_tables_api.c"
+  ],
+  "insertions": 2,
+  "deletions": 1,
+  "total_lines": 3,
+  "expected_diff": "diff --git a/net/netfilter/nf_tables_api.c b/net/netfilter/nf_tables_api.c\nindex 618af6e907..729a92781a 100644\n--- a/net/netfilter/nf_tables_api.c\n+++ b/net/netfilter/nf_tables_api.c\n@@ -4439,7 +4439,7 @@ static int nf_tables_newrule(struct sk_buff *skb, const struct nfnl_info *info,\n \n \tif (!nft_use_inc(&chain->use)) {\n \t\terr = -EMFILE;\n-\t\tgoto err_release_rule;\n+\t\tgoto err_destroy_flow;\n \t}\n \n \tif (info->nlh->nlmsg_flags & NLM_F_REPLACE) {\n@@ -4489,6 +4489,7 @@ static int nf_tables_newrule(struct sk_buff *skb, const struct nfnl_info *info,\n \n err_destroy_flow_rule:\n \tnft_use_dec_restore(&chain->use);\n+err_destroy_flow:\n \tif (flow)\n \t\tnft_flow_rule_destroy(flow);\n err_release_rule:",
+  "description": "Fix memory leak in rule creation by ensuring flow rule is freed when chain usage limit prevents addition",
+  "classifier": "deepseek-v4-flash-free"
+}

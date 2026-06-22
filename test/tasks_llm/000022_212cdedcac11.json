@@ -1,0 +1,16 @@
+{
+  "commit": "212cdedcac11c411d0e7c277e1cdcac5f1a20ba2",
+  "parent": "212cdedcac11c411d0e7c277e1cdcac5f1a20ba2^1",
+  "date": "2025-12-24 13:10:46 +0200",
+  "subject": "phy: qcom-qmp: qserdes-com: Add v8 DP-specific qserdes register offsets",
+  "files_changed": 1,
+  "file_list": [
+    ".../phy/qualcomm/phy-qcom-qmp-qserdes-dp-com-v8.h"
+  ],
+  "insertions": 52,
+  "deletions": 0,
+  "total_lines": 52,
+  "expected_diff": "diff --git a/drivers/phy/qualcomm/phy-qcom-qmp-qserdes-dp-com-v8.h b/drivers/phy/qualcomm/phy-qcom-qmp-qserdes-dp-com-v8.h\nnew file mode 100644\nindex 0000000000..93edabb830\n--- /dev/null\n+++ b/drivers/phy/qualcomm/phy-qcom-qmp-qserdes-dp-com-v8.h\n@@ -0,0 +1,52 @@\n+/* SPDX-License-Identifier: GPL-2.0 */\n+/*\n+ * Copyright (C) 2025 Linaro Ltd.\n+ */\n+\n+#ifndef QCOM_PHY_QMP_QSERDES_DP_COM_V8_H_\n+#define QCOM_PHY_QMP_QSERDES_DP_COM_V8_H_\n+\n+/* Only for DP QMP V8 PHY - QSERDES COM registers */\n+#define DP_QSERDES_V8_COM_HSCLK_SEL_1\t\t\t0x03c\n+#define DP_QSERDES_V8_COM_BIN_VCOCAL_CMP_CODE1_MODE0\t0x058\n+#define DP_QSERDES_V8_COM_BIN_VCOCAL_CMP_CODE2_MODE0\t0x05c\n+#define DP_QSERDES_V8_COM_SSC_STEP_SIZE1_MODE0\t\t0x060\n+#define DP_QSERDES_V8_COM_SSC_STEP_SIZE2_MODE0\t\t0x064\n+#define DP_QSERDES_V8_COM_CP_CTRL_MODE0\t\t\t0x070\n+#define DP_QSERDES_V8_COM_PLL_RCTRL_MODE0\t\t0x074\n+#define DP_QSERDES_V8_COM_PLL_CCTRL_MODE0\t\t0x078\n+#define DP_QSERDES_V8_COM_CORECLK_DIV_MODE0\t\t0x07c\n+#define DP_QSERDES_V8_COM_LOC\n... [truncated]",
+  "description": "Provide register offset header for DP QMP v8 PHY to enable future driver integration and DP support on new hardware",
+  "classifier": "deepseek-v4-flash-free"
+}

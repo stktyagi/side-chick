@@ -1,0 +1,17 @@
+{
+  "commit": "d1c7dc57ff2400b141e6582a8d2dc5170108cf81",
+  "parent": "d1c7dc57ff2400b141e6582a8d2dc5170108cf81^1",
+  "date": "2025-12-05 11:51:50 +0200",
+  "subject": "drm/atomic-helper: Export and namespace some functions",
+  "files_changed": 2,
+  "file_list": [
+    "drivers/gpu/drm/drm_atomic_helper.c",
+    "include/drm/drm_atomic_helper.h"
+  ],
+  "insertions": 121,
+  "deletions": 23,
+  "total_lines": 144,
+  "expected_diff": "diff --git a/drivers/gpu/drm/drm_atomic_helper.c b/drivers/gpu/drm/drm_atomic_helper.c\nindex ef97f37560..5beea64503 100644\n--- a/drivers/gpu/drm/drm_atomic_helper.c\n+++ b/drivers/gpu/drm/drm_atomic_helper.c\n@@ -1162,8 +1162,18 @@ crtc_needs_disable(struct drm_crtc_state *old_state,\n \t       new_state->self_refresh_active;\n }\n \n-static void\n-encoder_bridge_disable(struct drm_device *dev, struct drm_atomic_state *state)\n+/**\n+ * drm_atomic_helper_commit_encoder_bridge_disable - disable bridges and encoder\n+ * @dev: DRM device\n+ * @state: the driver state object\n+ *\n+ * Loops over all connectors in the current state and if the CRTC needs\n+ * it, disables the bridge chain all the way, then disables the encoder\n+ * afterwards.\n+ */\n+void\n+drm_atomic_helper_commit_encoder_bridge_disable(struct drm_device *dev,\n+\t\t\t\t\t\tstruct drm_atomic_state *state)\n {\n \tstruct drm_connector *connector;\n \tstruct drm_connector_state *old_conn_state, *new_conn_state;\n@@ -1229,9 +1239,18 @@ encoder_bridge_disabl\n... [truncated]",
+  "description": "Export and rename internal atomic helper functions to make them available as public API for other display drivers, enabling proper atomic commit helper usage.",
+  "classifier": "deepseek-v4-flash-free"
+}

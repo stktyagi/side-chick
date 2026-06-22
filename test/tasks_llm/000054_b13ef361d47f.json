@@ -1,0 +1,19 @@
+{
+  "commit": "b13ef361d47f09b7aecd18e0383ecc83ff61057e",
+  "parent": "b13ef361d47f09b7aecd18e0383ecc83ff61057e^1",
+  "date": "2025-12-20 04:49:37 +0100",
+  "subject": "dm: replace -EEXIST with -EBUSY",
+  "files_changed": 4,
+  "file_list": [
+    "drivers/md/dm-exception-store.c",
+    "drivers/md/dm-log.c",
+    "drivers/md/dm-path-selector.c",
+    "drivers/md/dm-target.c"
+  ],
+  "insertions": 4,
+  "deletions": 4,
+  "total_lines": 8,
+  "expected_diff": "diff --git a/drivers/md/dm-exception-store.c b/drivers/md/dm-exception-store.c\nindex c3799757bf..88f119a0a2 100644\n--- a/drivers/md/dm-exception-store.c\n+++ b/drivers/md/dm-exception-store.c\n@@ -116,7 +116,7 @@ int dm_exception_store_type_register(struct dm_exception_store_type *type)\n \tif (!__find_exception_store_type(type->name))\n \t\tlist_add(&type->list, &_exception_store_types);\n \telse\n-\t\tr = -EEXIST;\n+\t\tr = -EBUSY;\n \tspin_unlock(&_lock);\n \n \treturn r;\ndiff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c\nindex 9d85d045f9..bced5a783e 100644\n--- a/drivers/md/dm-log.c\n+++ b/drivers/md/dm-log.c\n@@ -121,7 +121,7 @@ int dm_dirty_log_type_register(struct dm_dirty_log_type *type)\n \tif (!__find_dirty_log_type(type->name))\n \t\tlist_add(&type->list, &_log_types);\n \telse\n-\t\tr = -EEXIST;\n+\t\tr = -EBUSY;\n \tspin_unlock(&_lock);\n \n \treturn r;\ndiff --git a/drivers/md/dm-path-selector.c b/drivers/md/dm-path-selector.c\nindex d0b883fabf..2b0ac200f1 100644\n--- a/drivers/md/dm-path-selector.c\n+++ b/drive\n... [truncated]",
+  "description": "Change error code returned when registering a duplicate target/type from EEXIST to EBUSY for better semantic correctness.",
+  "classifier": "deepseek-v4-flash-free"
+}

@@ -1,0 +1,17 @@
+{
+  "commit": "5fc6dd158e97d317aeb85ea930613f8db172603b",
+  "parent": "5fc6dd158e97d317aeb85ea930613f8db172603b^1",
+  "date": "2025-12-29 13:25:23 -0500",
+  "subject": "virtio: add virtqueue_add_inbuf_cache_clean API",
+  "files_changed": 2,
+  "file_list": [
+    "drivers/virtio/virtio_ring.c",
+    "include/linux/virtio.h"
+  ],
+  "insertions": 65,
+  "deletions": 23,
+  "total_lines": 88,
+  "expected_diff": "diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c\nindex 95e320b236..4fe0f78df5 100644\n--- a/drivers/virtio/virtio_ring.c\n+++ b/drivers/virtio/virtio_ring.c\n@@ -174,7 +174,8 @@ struct virtqueue_ops {\n \tint (*add)(struct vring_virtqueue *vq, struct scatterlist *sgs[],\n \t\t   unsigned int total_sg, unsigned int out_sgs,\n \t\t   unsigned int in_sgs,\tvoid *data,\n-\t\t   void *ctx, bool premapped, gfp_t gfp);\n+\t\t   void *ctx, bool premapped, gfp_t gfp,\n+\t\t   unsigned long attr);\n \tvoid *(*get)(struct vring_virtqueue *vq, unsigned int *len, void **ctx);\n \tbool (*kick_prepare)(struct vring_virtqueue *vq);\n \tvoid (*disable_cb)(struct vring_virtqueue *vq);\n@@ -444,7 +445,7 @@ static int vring_mapping_error(const struct vring_virtqueue *vq,\n /* Map one sg entry. */\n static int vring_map_one_sg(const struct vring_virtqueue *vq, struct scatterlist *sg,\n \t\t\t    enum dma_data_direction direction, dma_addr_t *addr,\n-\t\t\t    u32 *len, bool premapped)\n+\t\t\t    u32 *len, bool premapped, u\n... [truncated]",
+  "description": "Develop a new virtio interface function that accepts an attribute parameter, enabling optimized buffer caching strategies in guest drivers and improving DMA handling efficiency.",
+  "classifier": "deepseek-v4-flash-free"
+}

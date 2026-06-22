@@ -1,0 +1,9 @@
+# Linux kernel clone (huge)
+/linux/
+
+# Test artifacts
+/results/
+/tasks/
+/work/
+*.pyc
+__pycache__/

@@ -1,0 +1,19 @@
+{
+  "commit": "2b03d9a40cd1fea42fd65d2b66df80edc0f374c8",
+  "parent": "2b03d9a40cd1fea42fd65d2b66df80edc0f374c8^1",
+  "date": "2025-12-27 18:01:34 +0000",
+  "subject": "gpio: add gpio-line-mux driver",
+  "files_changed": 4,
+  "file_list": [
+    "MAINTAINERS",
+    "drivers/gpio/Kconfig",
+    "drivers/gpio/Makefile",
+    "drivers/gpio/gpio-line-mux.c"
+  ],
+  "insertions": 142,
+  "deletions": 0,
+  "total_lines": 142,
+  "expected_diff": "diff --git a/drivers/gpio/gpio-line-mux.c b/drivers/gpio/gpio-line-mux.c\nnew file mode 100644\nindex 0000000000..a4f3843062\n--- /dev/null\n+++ b/drivers/gpio/gpio-line-mux.c\n@@ -0,0 +1,126 @@\n+// SPDX-License-Identifier: GPL-2.0\n+/*\n+ * GPIO line mux which acts as virtual gpiochip and provides a 1-to-many\n+ * mapping between virtual GPIOs and a real GPIO + multiplexer.\n+ *\n+ * Copyright (c) 2025 Jonas Jelonek <jelonek.jonas@gmail.com>\n+ */\n+\n+#include <linux/gpio/consumer.h>\n+#include <linux/gpio/driver.h>\n+#include <linux/mod_devicetable.h>\n+#include <linux/mutex.h>\n+#include <linux/mux/consumer.h>\n+#include <linux/platform_device.h>\n+\n+#define MUX_SELECT_DELAY_US\t100\n+\n+struct gpio_lmux {\n+\tstruct gpio_chip gc;\n+\tstruct mux_control *mux;\n+\tstruct gpio_desc *muxed_gpio;\n+\n+\tu32 num_gpio_mux_states;\n+\tunsigned int gpio_mux_states[] __counted_by(num_gpio_mux_states);\n+};\n+\n+static int gpio_lmux_gpio_get(struct gpio_chip *gc, unsigned int offset)\n+{\n+\tstruct gpio_lmux *glm = gpiochip_get_d\n... [truncated]",
+  "description": "Implement a virtual gpiochip providing 1-to-many mapping between virtual GPIOs and a real GPIO using a multiplexer control. The driver registers a gpiochip that uses a mux controller to select the active virtual line for GPIO operations, handling get/set by switching mux state and accessing the underlying GPIO.",
+  "classifier": "deepseek-v4-flash-free"
+}

@@ -1,0 +1,16 @@
+{
+  "commit": "e901c7fce59e72d9f3c92733c379849c4034ac50",
+  "parent": "e901c7fce59e72d9f3c92733c379849c4034ac50^1",
+  "date": "2025-12-11 07:34:34 -0500",
+  "subject": "NFSD: Fix permission check for read access to executable-only files",
+  "files_changed": 1,
+  "file_list": [
+    "fs/nfsd/vfs.c"
+  ],
+  "insertions": 2,
+  "deletions": 2,
+  "total_lines": 4,
+  "expected_diff": "diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c\nindex ab46301da4..32ee753de9 100644\n--- a/fs/nfsd/vfs.c\n+++ b/fs/nfsd/vfs.c\n@@ -2906,8 +2906,8 @@ nfsd_permission(struct svc_cred *cred, struct svc_export *exp,\n \n \t/* Allow read access to binaries even when mode 111 */\n \tif (err == -EACCES && S_ISREG(inode->i_mode) &&\n-\t     (acc == (NFSD_MAY_READ | NFSD_MAY_OWNER_OVERRIDE) ||\n-\t      acc == (NFSD_MAY_READ | NFSD_MAY_READ_IF_EXEC)))\n+\t     (((acc & NFSD_MAY_MASK) == NFSD_MAY_READ) &&\n+\t      (acc & (NFSD_MAY_OWNER_OVERRIDE | NFSD_MAY_READ_IF_EXEC))))\n \t\terr = inode_permission(&nop_mnt_idmap, inode, MAY_EXEC);\n \n \treturn err? nfserrno(err) : 0;",
+  "description": "Correct the access control check for read operations on executable-only files in the NFS server.",
+  "classifier": "deepseek-v4-flash-free"
+}

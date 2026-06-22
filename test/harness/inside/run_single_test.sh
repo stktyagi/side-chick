@@ -1,0 +1,143 @@
+#!/bin/bash
+set -euo pipefail
+
+MODE="${1:-}"
+TASK_FILE="${TASK_FILE:-/task.json}"
+LINUX_REPO="${LINUX_REPO:-/linux-repo}"
+CONFIG_DIR="${CONFIG_DIR:-/config}"
+RESULTS_DIR="${RESULTS_DIR:-/results}"
+MODEL="${MODEL:-opencode/deepseek-v4-flash-free}"
+TIMEOUT="${TIMEOUT:-300}"
+
+if [[ -z "$MODE" || ( "$MODE" != "mcp" && "$MODE" != "baseline" ) ]]; then
+    echo "Usage: $0 <mcp|baseline>"
+    exit 1
+fi
+
+mkdir -p "$RESULTS_DIR" /root/.config/opencode
+
+# Read task
+COMMIT=$(python3 -c "import json; t=json.load(open('$TASK_FILE')); print(t['commit'])")
+PARENT=$(python3 -c "import json; t=json.load(open('$TASK_FILE')); print(t['parent'])")
+DESCRIPTION=$(python3 -c "import json; print(json.load(open('$TASK_FILE'))['description'])")
+echo "=== Task: $DESCRIPTION ==="
+
+# Prepare source in tmpfs (no .git history from linux repo)
+echo "--- Preparing source (commit=$COMMIT parent=$PARENT) ---"
+WORKDIR=$(mktemp -d)
+git --git-dir="$LINUX_REPO/.git" archive --format=tar "$PARENT" | tar -x -C "$WORKDIR"
+cd "$WORKDIR"
+git init
+git config user.email "test@test"
+git config user.name "test"
+git add -A
+git commit --allow-empty -m "Initial state (before change)" >/dev/null 2>&1
+
+# Save expected diff (use --git-dir to access the linux repo)
+git --git-dir="$LINUX_REPO/.git" diff --no-color "${PARENT}..${COMMIT}" > "$RESULTS_DIR/expected.diff" 2>/dev/null || true
+echo "  Expected diff saved ($(wc -c < "$RESULTS_DIR/expected.diff") bytes)"
+
+# Setup opencode config
+if [ "$MODE" = "mcp" ]; then
+    echo "=== Mode: with fastcontext MCP ==="
+    echo "--- Syncing fastcontext dependencies ---"
+    uv sync --no-dev --directory /fastcontext 2>&1 | tail -3
+    python3 -c "
+import json, os
+with open('$CONFIG_DIR/opencode_mcp.json') as f:
+    config = json.load(f)
+env = config['mcp']['fastcontext']['env']
+env['MODEL'] = os.environ.get('FASTCONTEXT_MODEL', '')
+env['BASE_URL'] = os.environ.get('FASTCONTEXT_BASE_URL', '')
+env['API_KEY'] = os.environ.get('FASTCONTEXT_API_KEY', '')
+extra = os.environ.get('FASTCONTEXT_EXTRA_HEADERS')
+if extra:
+    env['EXTRA_HEADERS'] = extra
+else:
+    env.pop('EXTRA_HEADERS', None)
+with open('/root/.config/opencode/opencode.json', 'w') as f:
+    json.dump(config, f, indent=2)
+"
+else
+    echo "=== Mode: baseline (no MCP) ==="
+    cp "$CONFIG_DIR/opencode_baseline.json" /root/.config/opencode/opencode.json
+fi
+
+# Run opencode with JSON output — save full trajectory + extract tokens
+echo "=== Running opencode (timeout: ${TIMEOUT}s) ==="
+START_TIME=$(date +%s)
+timeout "$TIMEOUT" opencode run --dangerously-skip-permissions --model "$MODEL" \
+    --dir "$WORKDIR" --format json \
+    "$DESCRIPTION" 2>/dev/null | tee "$RESULTS_DIR/trajectory.jsonl" | python3 -c "
+import sys, json
+
+total_in = 0
+total_out = 0
+total_reason = 0
+cache_write = 0
+cache_read = 0
+cost = 0.0
+
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        ev = json.loads(line)
+    except json.JSONDecodeError:
+        print(line)
+        continue
+    
+    ev_type = ev.get('type', '')
+    part = ev.get('part', {})
+    
+    if ev_type == 'step_finish':
+        t = part.get('tokens', {})
+        if t:
+            total_in += t.get('input', 0)
+            total_out += t.get('output', 0)
+            total_reason += t.get('reasoning', 0)
+            cache_write += t.get('cache', {}).get('write', 0)
+            cache_read += t.get('cache', {}).get('read', 0)
+        cost += part.get('cost', 0) or 0
+    
+    if ev_type == 'tool_use':
+        t = part.get('tool', '?')
+        s = part.get('state', {})
+        st = s.get('status', '')
+        print(f'[{t}] ({st}) {s.get(\"title\", \"\")}'[:120])
+    elif ev_type == 'step_finish':
+        reason = part.get('reason', '')
+        msg = part.get('message', '')[:80]
+        print(f'[finish] reason={reason} {msg}')
+    elif ev_type == 'completion':
+        print('[DONE]')
+
+with open('$RESULTS_DIR/tokens.json', 'w') as f:
+    json.dump({
+        'input_tokens': total_in,
+        'output_tokens': total_out,
+        'reasoning_tokens': total_reason,
+        'cache_write': cache_write,
+        'cache_read': cache_read,
+        'total_tokens': total_in + total_out + total_reason,
+        'cost': round(cost, 4),
+    }, f, indent=2)
+
+print(f'TOKENS: in={total_in} out={total_out} reasoning={total_reason} cache_w={cache_write} cache_r={cache_read} cost={cost:.4f}')
+" > "$RESULTS_DIR/opencode_output.txt" || true
+END_TIME=$(date +%s)
+echo "Duration: $((END_TIME - START_TIME)) seconds" | tee -a "$RESULTS_DIR/opencode_output.txt"
+
+# Collect changes made
+echo "=== Collecting results ==="
+if git -C "$WORKDIR" rev-parse --git-dir >/dev/null 2>&1; then
+    git -C "$WORKDIR" diff --no-color > "$RESULTS_DIR/changes.diff" 2>/dev/null || true
+    git -C "$WORKDIR" diff --stat > "$RESULTS_DIR/changes_stat.txt" 2>/dev/null || true
+fi
+
+# Cleanup
+rm -rf "$WORKDIR"
+
+echo "=== Test complete ==="
+exit 0

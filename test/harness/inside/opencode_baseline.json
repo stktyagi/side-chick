@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "snapshot": false,
+  "permission": {
+    "bash": { "*": "allow" },
+    "edit": "allow",
+    "read": "allow"
+  },
+  "agent": {
+    "build": { "model": "opencode/deepseek-v4-flash-free" },
+    "plan": { "model": "opencode/deepseek-v4-flash-free" },
+    "general": { "model": "opencode/deepseek-v4-flash-free" },
+    "explore": { "model": "opencode/deepseek-v4-flash-free" },
+    "scout": { "model": "opencode/deepseek-v4-flash-free" }
+  }
+}

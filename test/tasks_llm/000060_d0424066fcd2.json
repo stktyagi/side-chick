@@ -1,0 +1,18 @@
+{
+  "commit": "d0424066fcd294977f310964bed6f2a487fa4515",
+  "parent": "d0424066fcd294977f310964bed6f2a487fa4515^1",
+  "date": "2025-12-15 14:10:36 -0500",
+  "subject": "nfsd: check that server is running in unlock_filesystem",
+  "files_changed": 3,
+  "file_list": [
+    "fs/nfsd/nfs4state.c",
+    "fs/nfsd/nfsctl.c",
+    "fs/nfsd/state.h"
+  ],
+  "insertions": 12,
+  "deletions": 6,
+  "total_lines": 18,
+  "expected_diff": "diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c\nindex 18b3688e0f..ac9b31d96f 100644\n--- a/fs/nfsd/nfs4state.c\n+++ b/fs/nfsd/nfs4state.c\n@@ -1759,7 +1759,7 @@ static struct nfs4_stid *find_one_sb_stid(struct nfs4_client *clp,\n \n /**\n  * nfsd4_revoke_states - revoke all nfsv4 states associated with given filesystem\n- * @net:  used to identify instance of nfsd (there is one per net namespace)\n+ * @nn:   used to identify instance of nfsd (there is one per net namespace)\n  * @sb:   super_block used to identify target filesystem\n  *\n  * All nfs4 states (open, lock, delegation, layout) held by the server instance\n@@ -1771,9 +1771,8 @@ static struct nfs4_stid *find_one_sb_stid(struct nfs4_client *clp,\n  * The clients which own the states will subsequently being notified that the\n  * states have been \"admin-revoked\".\n  */\n-void nfsd4_revoke_states(struct net *net, struct super_block *sb)\n+void nfsd4_revoke_states(struct nfsd_net *nn, struct super_block *sb)\n {\n-\tstruct nfsd_net *nn = net\n... [truncated]",
+  "description": "Ensure the server is running before unlocking filesystem to prevent race conditions.",
+  "classifier": "deepseek-v4-flash-free"
+}

@@ -1,0 +1,19 @@
+{
+  "commit": "2857bd59feb63fcf40fe4baf55401baea6b4feb4",
+  "parent": "2857bd59feb63fcf40fe4baf55401baea6b4feb4^1",
+  "date": "2025-12-13 13:41:59 -0500",
+  "subject": "nfsd: provide locking for v4_end_grace",
+  "files_changed": 4,
+  "file_list": [
+    "fs/nfsd/netns.h",
+    "fs/nfsd/nfs4state.c",
+    "fs/nfsd/nfsctl.c",
+    "fs/nfsd/state.h"
+  ],
+  "insertions": 44,
+  "deletions": 5,
+  "total_lines": 49,
+  "expected_diff": "diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h\nindex 3e2d0fde80..fe8338735e 100644\n--- a/fs/nfsd/netns.h\n+++ b/fs/nfsd/netns.h\n@@ -66,6 +66,8 @@ struct nfsd_net {\n \n \tstruct lock_manager nfsd4_manager;\n \tbool grace_ended;\n+\tbool grace_end_forced;\n+\tbool client_tracking_active;\n \ttime64_t boot_time;\n \n \tstruct dentry *nfsd_client_dir;\ndiff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c\nindex 5b83cb33bf..a1dccce8b9 100644\n--- a/fs/nfsd/nfs4state.c\n+++ b/fs/nfsd/nfs4state.c\n@@ -84,7 +84,7 @@ static u64 current_sessionid = 1;\n /* forward declarations */\n static bool check_for_locks(struct nfs4_file *fp, struct nfs4_lockowner *lowner);\n static void nfs4_free_ol_stateid(struct nfs4_stid *stid);\n-void nfsd4_end_grace(struct nfsd_net *nn);\n+static void nfsd4_end_grace(struct nfsd_net *nn);\n static void _free_cpntf_state_locked(struct nfsd_net *nn, struct nfs4_cpntf_state *cps);\n static void nfsd4_file_hash_remove(struct nfs4_file *fi);\n static void deleg_reaper(struct nfsd_net *nn);\n@@ -657\n... [truncated]",
+  "description": "Add locking mechanism for the end of grace period in NFSv4 state management to ensure proper synchronization.",
+  "classifier": "deepseek-v4-flash-free"
+}

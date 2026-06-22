@@ -1,0 +1,16 @@
+{
+  "commit": "f3a9c95a15d2f4466acad5c68faeff79ca5e9f47",
+  "parent": "f3a9c95a15d2f4466acad5c68faeff79ca5e9f47^1",
+  "date": "2025-12-20 20:03:50 +0800",
+  "subject": "dm: remove fake timeout to avoid leak request",
+  "files_changed": 1,
+  "file_list": [
+    "drivers/md/dm-rq.c"
+  ],
+  "insertions": 1,
+  "deletions": 2,
+  "total_lines": 3,
+  "expected_diff": "diff --git a/drivers/md/dm-rq.c b/drivers/md/dm-rq.c\nindex a6ca92049c..5e08546696 100644\n--- a/drivers/md/dm-rq.c\n+++ b/drivers/md/dm-rq.c\n@@ -278,8 +278,7 @@ static void dm_complete_request(struct request *rq, blk_status_t error)\n \tstruct dm_rq_target_io *tio = tio_from_request(rq);\n \n \ttio->error = error;\n-\tif (likely(!blk_should_fake_timeout(rq->q)))\n-\t\tblk_mq_complete_request(rq);\n+\tblk_mq_complete_request(rq);\n }\n \n /*",
+  "description": "Remove the fake timeout bypass in request completion to ensure requests are properly completed and avoid potential resource leaks.",
+  "classifier": "deepseek-v4-flash-free"
+}

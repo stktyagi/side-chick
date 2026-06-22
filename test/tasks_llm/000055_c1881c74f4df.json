@@ -1,0 +1,16 @@
+{
+  "commit": "c1881c74f4dfdadc1bf827d971a605b21ba5a587",
+  "parent": "c1881c74f4dfdadc1bf827d971a605b21ba5a587^1",
+  "date": "2025-12-12 21:09:55 +0800",
+  "subject": "dm-stripe: adjust max_hw_discard_sectors to avoid unnecessary discard bio splitting",
+  "files_changed": 1,
+  "file_list": [
+    "drivers/md/dm-stripe.c"
+  ],
+  "insertions": 9,
+  "deletions": 1,
+  "total_lines": 10,
+  "expected_diff": "diff --git a/drivers/md/dm-stripe.c b/drivers/md/dm-stripe.c\nindex 1461dc740d..8a872f5d63 100644\n--- a/drivers/md/dm-stripe.c\n+++ b/drivers/md/dm-stripe.c\n@@ -456,7 +456,7 @@ static void stripe_io_hints(struct dm_target *ti,\n \t\t\t    struct queue_limits *limits)\n {\n \tstruct stripe_c *sc = ti->private;\n-\tunsigned int io_min, io_opt;\n+\tunsigned int io_min, io_opt, max_hw_discard_sectors = limits->max_hw_discard_sectors;\n \n \tlimits->chunk_sectors = sc->chunk_size;\n \n@@ -465,6 +465,14 @@ static void stripe_io_hints(struct dm_target *ti,\n \t\tlimits->io_min = io_min;\n \t\tlimits->io_opt = io_opt;\n \t}\n+\tif (max_hw_discard_sectors >= sc->chunk_size) {\n+\t\tif (!check_mul_overflow(max_hw_discard_sectors, sc->stripes, &max_hw_discard_sectors)) {\n+\t\t\tmax_hw_discard_sectors = rounddown(max_hw_discard_sectors,\n+\t\t\t\t\tsc->chunk_size * sc->stripes);\n+\t\t\tlimits->max_hw_discard_sectors = max_hw_discard_sectors;\n+\t\t} else\n+\t\t\tlimits->max_hw_discard_sectors = UINT_MAX >> SECTOR_SHIFT;\n+\t}\n }\n \n static struct ta\n... [truncated]",
+  "description": "Modify the handling of max_hw_discard_sectors in the striped device mapper to avoid splitting discard bios unnecessarily.",
+  "classifier": "deepseek-v4-flash-free"
+}

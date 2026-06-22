@@ -1,0 +1,16 @@
+{
+  "commit": "085ba7c91df34e05366f9fecc9fa7a037598c30e",
+  "parent": "085ba7c91df34e05366f9fecc9fa7a037598c30e^1",
+  "date": "2025-12-24 12:35:02 +0200",
+  "subject": "phy: qcom: qmp-pcie: Add support for Glymur PCIe Gen4x2 PHY",
+  "files_changed": 1,
+  "file_list": [
+    "drivers/phy/qualcomm/phy-qcom-qmp-pcie.c"
+  ],
+  "insertions": 19,
+  "deletions": 0,
+  "total_lines": 19,
+  "expected_diff": "diff --git a/drivers/phy/qualcomm/phy-qcom-qmp-pcie.c b/drivers/phy/qualcomm/phy-qcom-qmp-pcie.c\nindex 7671aed563..fed2fc9bb3 100644\n--- a/drivers/phy/qualcomm/phy-qcom-qmp-pcie.c\n+++ b/drivers/phy/qualcomm/phy-qcom-qmp-pcie.c\n@@ -4632,6 +4632,22 @@ static const struct qmp_phy_cfg glymur_qmp_gen5x4_pciephy_cfg = {\n \t.phy_status\t\t= PHYSTATUS_4_20,\n };\n \n+static const struct qmp_phy_cfg glymur_qmp_gen4x2_pciephy_cfg = {\n+\t.lanes = 2,\n+\n+\t.offsets\t\t= &qmp_pcie_offsets_v8_0,\n+\n+\t.reset_list\t\t= sdm845_pciephy_reset_l,\n+\t.num_resets\t\t= ARRAY_SIZE(sdm845_pciephy_reset_l),\n+\t.vreg_list\t\t= qmp_phy_vreg_l,\n+\t.num_vregs\t\t= ARRAY_SIZE(qmp_phy_vreg_l),\n+\n+\t.regs\t\t\t= pciephy_v8_regs_layout,\n+\n+\t.pwrdn_ctrl\t\t= SW_PWRDN | REFCLK_DRV_DSBL,\n+\t.phy_status\t\t= PHYSTATUS_4_20,\n+};\n+\n static void qmp_pcie_init_port_b(struct qmp_pcie *qmp, const struct qmp_phy_cfg_tbls *tbls)\n {\n \tconst struct qmp_phy_cfg *cfg = qmp->cfg;\n@@ -5383,6 +5399,9 @@ static int qmp_pcie_probe(struct platform_device *pdev)\n \n static \n... [truncated]",
+  "description": "Implement configuration for Glymur PCIe Gen4x2 PHY to enable proper initialization and operation.",
+  "classifier": "deepseek-v4-flash-free"
+}

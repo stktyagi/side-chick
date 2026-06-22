@@ -1,0 +1,16 @@
+{
+  "commit": "0b88bfa42e5468baff71909c2f324a495318532b",
+  "parent": "0b88bfa42e5468baff71909c2f324a495318532b^1",
+  "date": "2025-12-16 18:27:37 +0800",
+  "subject": "NFSD: net ref data still needs to be freed even if net hasn't startup",
+  "files_changed": 1,
+  "file_list": [
+    "fs/nfsd/nfssvc.c"
+  ],
+  "insertions": 15,
+  "deletions": 15,
+  "total_lines": 30,
+  "expected_diff": "diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c\nindex f6cae4430b..f1cc223ece 100644\n--- a/fs/nfsd/nfssvc.c\n+++ b/fs/nfsd/nfssvc.c\n@@ -406,26 +406,26 @@ static void nfsd_shutdown_net(struct net *net)\n {\n \tstruct nfsd_net *nn = net_generic(net, nfsd_net_id);\n \n-\tif (!nn->nfsd_net_up)\n-\t\treturn;\n-\n-\tpercpu_ref_kill_and_confirm(&nn->nfsd_net_ref, nfsd_net_done);\n-\twait_for_completion(&nn->nfsd_net_confirm_done);\n-\n-\tnfsd_export_flush(net);\n-\tnfs4_state_shutdown_net(net);\n-\tnfsd_reply_cache_shutdown(nn);\n-\tnfsd_file_cache_shutdown_net(net);\n-\tif (nn->lockd_up) {\n-\t\tlockd_down(net);\n-\t\tnn->lockd_up = false;\n+\tif (nn->nfsd_net_up) {\n+\t\tpercpu_ref_kill_and_confirm(&nn->nfsd_net_ref, nfsd_net_done);\n+\t\twait_for_completion(&nn->nfsd_net_confirm_done);\n+\n+\t\tnfsd_export_flush(net);\n+\t\tnfs4_state_shutdown_net(net);\n+\t\tnfsd_reply_cache_shutdown(nn);\n+\t\tnfsd_file_cache_shutdown_net(net);\n+\t\tif (nn->lockd_up) {\n+\t\t\tlockd_down(net);\n+\t\t\tnn->lockd_up = false;\n+\t\t}\n+\t\twait_for_completion(&nn->nfsd_net_f\n... [truncated]",
+  "description": "Ensure network reference data is freed even if the network namespace hasn't started, preventing resource leak.",
+  "classifier": "deepseek-v4-flash-free"
+}

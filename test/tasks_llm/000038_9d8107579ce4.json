@@ -1,0 +1,16 @@
+{
+  "commit": "9d8107579ce4f2369ea3f670585710c30b14a4b4",
+  "parent": "9d8107579ce4f2369ea3f670585710c30b14a4b4^1",
+  "date": "2025-12-17 11:45:06 +0000",
+  "subject": "gpio: max77759: drop use of irqd_get_trigger_type",
+  "files_changed": 1,
+  "file_list": [
+    "drivers/gpio/gpio-max77759.c"
+  ],
+  "insertions": 2,
+  "deletions": 8,
+  "total_lines": 10,
+  "expected_diff": "diff --git a/drivers/gpio/gpio-max77759.c b/drivers/gpio/gpio-max77759.c\nindex 5e48eb03e7..3bf9f23d15 100644\n--- a/drivers/gpio/gpio-max77759.c\n+++ b/drivers/gpio/gpio-max77759.c\n@@ -435,8 +435,6 @@ static int max77759_gpio_probe(struct platform_device *pdev)\n \tint irq;\n \tstruct gpio_irq_chip *girq;\n \tint ret;\n-\tunsigned long irq_flags;\n-\tstruct irq_data *irqd;\n \n \tchip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);\n \tif (!chip)\n@@ -486,13 +484,9 @@ static int max77759_gpio_probe(struct platform_device *pdev)\n \t\treturn dev_err_probe(&pdev->dev, ret,\n \t\t\t\t     \"Failed to add GPIO chip\\n\");\n \n-\tirq_flags = IRQF_ONESHOT | IRQF_SHARED;\n-\tirqd = irq_get_irq_data(irq);\n-\tif (irqd)\n-\t\tirq_flags |= irqd_get_trigger_type(irqd);\n-\n \tret = devm_request_threaded_irq(&pdev->dev, irq, NULL,\n-\t\t\t\t\tmax77759_gpio_irqhandler, irq_flags,\n+\t\t\t\t\tmax77759_gpio_irqhandler,\n+\t\t\t\t\tIRQF_ONESHOT | IRQF_SHARED,\n \t\t\t\t\tdev_name(&pdev->dev), chip);\n \tif (ret < 0)\n \t\treturn dev_err_probe(&pdev->dev, ret,",
+  "description": "Simplify IRQ handling by removing the call to irqd_get_trigger_type and using fixed flags when requesting the threaded interrupt. This eliminates unnecessary complexity and ensures consistent IRQ behavior across platforms.",
+  "classifier": "deepseek-v4-flash-free"
+}

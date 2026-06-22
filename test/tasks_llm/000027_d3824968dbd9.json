@@ -1,0 +1,16 @@
+{
+  "commit": "d3824968dbd9056844bbd5041020a3e28c748558",
+  "parent": "d3824968dbd9056844bbd5041020a3e28c748558^1",
+  "date": "2025-12-03 13:11:43 +0100",
+  "subject": "dmaengine: at_xdmac: get the number of DMA channels from device tree",
+  "files_changed": 1,
+  "file_list": [
+    "drivers/dma/at_xdmac.c"
+  ],
+  "insertions": 23,
+  "deletions": 3,
+  "total_lines": 26,
+  "expected_diff": "diff --git a/drivers/dma/at_xdmac.c b/drivers/dma/at_xdmac.c\nindex ada96d4908..901971e8ba 100644\n--- a/drivers/dma/at_xdmac.c\n+++ b/drivers/dma/at_xdmac.c\n@@ -2247,12 +2247,29 @@ static int __maybe_unused atmel_xdmac_runtime_resume(struct device *dev)\n \treturn clk_enable(atxdmac->clk);\n }\n \n+static inline int at_xdmac_get_channel_number(struct platform_device *pdev,\n+\t\t\t\t\t      u32 reg, u32 *pchannels)\n+{\n+\tint\tret;\n+\n+\tif (reg) {\n+\t\t*pchannels = AT_XDMAC_NB_CH(reg);\n+\t\treturn 0;\n+\t}\n+\n+\tret = of_property_read_u32(pdev->dev.of_node, \"dma-channels\", pchannels);\n+\tif (ret)\n+\t\tdev_err(&pdev->dev, \"can't get number of channels\\n\");\n+\n+\treturn ret;\n+}\n+\n static int at_xdmac_probe(struct platform_device *pdev)\n {\n \tstruct at_xdmac\t*atxdmac;\n-\tint\t\tirq, nr_channels, i, ret;\n+\tint\t\tirq, ret;\n \tvoid __iomem\t*base;\n-\tu32\t\treg;\n+\tu32\t\tnr_channels, i, reg;\n \n \tirq = platform_get_irq(pdev, 0);\n \tif (irq < 0)\n@@ -2268,7 +2285,10 @@ static int at_xdmac_probe(struct platform_device *pdev)\n \t * of chan\n... [truncated]",
+  "description": "Enable specification of DMA channel count via device tree property, falling back to hardware register when not provided.",
+  "classifier": "deepseek-v4-flash-free"
+}

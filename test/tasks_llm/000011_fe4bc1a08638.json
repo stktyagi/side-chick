@@ -1,0 +1,20 @@
+{
+  "commit": "fe4bc1a08638309b6be1af37210930b856908eb7",
+  "parent": "fe4bc1a08638309b6be1af37210930b856908eb7^1",
+  "date": "2025-10-17 22:49:53 +0800",
+  "subject": "phy: spacemit: support K1 USB2.0 PHY controller",
+  "files_changed": 5,
+  "file_list": [
+    "drivers/phy/Kconfig",
+    "drivers/phy/Makefile",
+    "drivers/phy/spacemit/Kconfig",
+    "drivers/phy/spacemit/Makefile",
+    "drivers/phy/spacemit/phy-k1-usb2.c"
+  ],
+  "insertions": 217,
+  "deletions": 0,
+  "total_lines": 217,
+  "expected_diff": "diff --git a/drivers/phy/spacemit/phy-k1-usb2.c b/drivers/phy/spacemit/phy-k1-usb2.c\nnew file mode 100644\nindex 0000000000..3420613800\n--- /dev/null\n+++ b/drivers/phy/spacemit/phy-k1-usb2.c\n@@ -0,0 +1,200 @@\n+// SPDX-License-Identifier: GPL-2.0-only\n+/*\n+ * SpacemiT K1 USB 2.0 PHY driver\n+ *\n+ * Copyright (C) 2025 SpacemiT (Hangzhou) Technology Co. Ltd\n+ * Copyright (C) 2025 Ze Huang <huang.ze@linux.dev>\n+ */\n+\n+#include <linux/bitfield.h>\n+#include <linux/clk.h>\n+#include <linux/iopoll.h>\n+#include <linux/platform_device.h>\n+#include <linux/regmap.h>\n+#include <linux/usb/of.h>\n+\n+#define PHY_RST_MODE_CTRL\t\t0x04\n+#define  PHY_PLL_RDY\t\t\tBIT(0)\n+#define  PHY_CLK_CDR_EN\t\t\tBIT(1)\n+#define  PHY_CLK_PLL_EN\t\t\tBIT(2)\n+#define  PHY_CLK_MAC_EN\t\t\tBIT(3)\n+#define  PHY_MAC_RSTN\t\t\tBIT(5)\n+#define  PHY_CDR_RSTN\t\t\tBIT(6)\n+#define  PHY_PLL_RSTN\t\t\tBIT(7)\n+/*\n+ * hs line state sel (Bit 13):\n+ * - 1 (Default): Internal HS line state is set to 01 when usb_hs_tx_en is valid.\n+ * - 0: Internal HS line state \n... [truncated]",
+  "description": "Implement a new USB 2.0 PHY driver for the SpacemiT K1 SoC, providing initialization, power management, and PHY operations integrated into the generic PHY framework.",
+  "classifier": "deepseek-v4-flash-free"
+}

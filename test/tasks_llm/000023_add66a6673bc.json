@@ -1,0 +1,16 @@
+{
+  "commit": "add66a6673bc4aacd0ef0f3c4a51271501770b17",
+  "parent": "add66a6673bc4aacd0ef0f3c4a51271501770b17^1",
+  "date": "2025-12-24 13:10:47 +0200",
+  "subject": "phy: qcom: edp: Add Glymur platform support",
+  "files_changed": 1,
+  "file_list": [
+    "drivers/phy/qualcomm/phy-qcom-edp.c"
+  ],
+  "insertions": 219,
+  "deletions": 8,
+  "total_lines": 227,
+  "expected_diff": "diff --git a/drivers/phy/qualcomm/phy-qcom-edp.c b/drivers/phy/qualcomm/phy-qcom-edp.c\nindex f98fe83de4..13feab99fe 100644\n--- a/drivers/phy/qualcomm/phy-qcom-edp.c\n+++ b/drivers/phy/qualcomm/phy-qcom-edp.c\n@@ -26,6 +26,8 @@\n #include \"phy-qcom-qmp-qserdes-com-v4.h\"\n #include \"phy-qcom-qmp-qserdes-com-v6.h\"\n \n+#include \"phy-qcom-qmp-qserdes-dp-com-v8.h\"\n+\n /* EDP_PHY registers */\n #define DP_PHY_CFG                              0x0010\n #define DP_PHY_CFG_1                            0x0014\n@@ -76,6 +78,7 @@ struct phy_ver_ops {\n \tint (*com_power_on)(const struct qcom_edp *edp);\n \tint (*com_resetsm_cntrl)(const struct qcom_edp *edp);\n \tint (*com_bias_en_clkbuflr)(const struct qcom_edp *edp);\n+\tint (*com_clk_fwd_cfg)(const struct qcom_edp *edp);\n \tint (*com_configure_pll)(const struct qcom_edp *edp);\n \tint (*com_configure_ssc)(const struct qcom_edp *edp);\n };\n@@ -83,6 +86,7 @@ struct phy_ver_ops {\n struct qcom_edp_phy_cfg {\n \tbool is_edp;\n \tconst u8 *aux_cfg;\n+\tconst u8 *vco_div_cfg;\n \tc\n... [truncated]",
+  "description": "Implement support for a new eDP PHY platform by adding version-specific operations, configuration structures, and register programming sequences to enable display functionality on the target hardware.",
+  "classifier": "deepseek-v4-flash-free"
+}
