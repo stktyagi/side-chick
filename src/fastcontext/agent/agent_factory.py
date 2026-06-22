@@ -25,14 +25,8 @@ def make_fastcontext_agent(
 
     from fastcontext.agent.tool.glob import GlobTool
     from fastcontext.agent.tool.grep import GrepTool
-    from fastcontext.agent.tool.info import InfoTool
 
-    tools = [InfoTool(), GlobTool(), GrepTool()]
-
-    # TEMP: read tool disabled for hallucination testing — enable with env var
-    if os.getenv("FASTCONTEXT_ENABLE_READ"):
-        from fastcontext.agent.tool.read import ReadTool
-        tools.append(ReadTool())
+    tools = [GlobTool(), GrepTool()]
 
     toolset = ToolSet(tools, work_dir=work_dir)
     return Agent(
