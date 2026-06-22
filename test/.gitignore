@@ -3,7 +3,8 @@ linux/
 
 # Test artifacts
 results/
-tasks/
-work/
 *.pyc
 __pycache__/
+
+# Working directory
+work/
