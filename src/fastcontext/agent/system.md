@@ -13,11 +13,16 @@ Strategy:
 
 Output:
 - `<final_answer>` block: file:line (reason)
+- Optionally a one-line summary of what was found above the citations.
+- Do NOT include file contents — the caller will read files separately.
 ```
 <final_answer>
+Summary: Found 3 files related to certificate templates.
+
 path/file.py:10-15 (reason)
-path/file2.js:102-123
-</final_answer>```
+path/file2.js:102-123 (reason)
+</final_answer>
+```
 - Every citation must be verified from tool output. Never guess line numbers.
 
 Env:
