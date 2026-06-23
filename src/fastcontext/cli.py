@@ -4,10 +4,12 @@ import os
 from datetime import datetime
 
 from fastcontext.agent.agent_factory import make_fastcontext_agent
+from fastcontext.agent.utils import load_dotenv
 
 
 def main():
     """FastContext Command Line Interface"""
+    load_dotenv()
     parser = argparse.ArgumentParser(
         description="FastContext CLI",
     )

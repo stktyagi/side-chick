@@ -44,10 +44,16 @@ class Agent:
 
         while True:
             n_turn += 1
-            if max_turns is not None:
+
+            # Force final answer when budget is exhausted
+            force_final = False
+            if max_turns is not None and n_turn > max_turns:
+                # On the turn right after the forced prompt, if LLM still made tool calls,
+                # we call again WITHOUT tools so it must respond with text.
+                # The forced prompt was already injected the previous iteration.
                 if n_turn > max_turns + 1:
-                    return f"No final answer after {max_turns} turns."
-                if n_turn == max_turns + 1:
+                    force_final = True
+                elif n_turn == max_turns + 1:
                     await self.context.add(
                         Message(
                             role="user",
@@ -60,7 +66,7 @@ class Agent:
                 step_msg = await asyncio.wait_for(
                     self.llm.acall(
                         messages=self.context.get_messages(),
-                        tools=self.toolset.schema_list(),
+                        tools=None if force_final else self.toolset.schema_list(),
                     ),
                     timeout=120,
                 )
@@ -72,6 +78,12 @@ class Agent:
             await self.context.add(step_msg)
             if verbose:
                 print(f"Turn {n_turn}: \n {step_msg.to_dict()} \n")
+
+            if force_final:
+                if citation:
+                    return get_final_answer(step_msg.content)
+                return step_msg.content
+
             if step_msg.tool_calls:
                 tools_result_msg = await self.toolset.call(step_msg)
                 await self.context.add(tools_result_msg)

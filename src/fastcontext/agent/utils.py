@@ -51,10 +51,37 @@ def load_system_prompt(work_dir: str) -> str:
 
 
 def get_final_answer(text: str) -> str:
-    m = re.search(r"<final_answer>(.*?)</final_answer>", text, re.DOTALL)
-    if m is None:
+    matches = list(re.finditer(r"<final_answer>(.*?)</final_answer>", text, re.DOTALL))
+    if not matches:
         return text
-    return m.group(0)
+    return matches[-1].group(0)
+
+
+def _load_env_file(path: Path) -> None:
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        line = line.removeprefix("export ").strip()
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip().strip("\"'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+def load_dotenv() -> None:
+    """Load .env from FASTCONTEXT_ENV, then cwd/.env, then ~/.config/fastcontext/{.env,env}."""
+    explicit = os.getenv("FASTCONTEXT_ENV")
+    if explicit:
+        _load_env_file(Path(explicit))
+        return
+    _load_env_file(Path(".env"))
+    cfg_dir = Path.home() / ".config" / "fastcontext"
+    _load_env_file(cfg_dir / ".env")
+    _load_env_file(cfg_dir / "env")
 
 
 if __name__ == "__main__":

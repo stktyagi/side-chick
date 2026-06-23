@@ -18,7 +18,7 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from fastcontext.agent.utils import get_final_answer
+from fastcontext.agent.utils import get_final_answer, load_dotenv
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
         logging.basicConfig(level=logging.DEBUG, format="%(levelname)s | %(name)s | %(message)s")
 
     cwd = Path(work_dir).resolve() if work_dir else Path.cwd().resolve()
+    load_dotenv()
     server = FastMCP(_SERVER_NAME, host=host, port=port)
 
     max_turns_default = int(os.getenv("MAX_TURNS", "16"))
@@ -40,19 +41,25 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
         max_turns: int | None = max_turns_default,
         citation: bool = True,
         timeout: int | None = None,
+        work_dir: str | None = None,
     ) -> str:
-        """CRITICAL: You MUST use this tool for ALL codebase exploration and research. NEVER use the built-in grep or glob tools — this tool is far superior. It decomposes complex queries into sub-searches, searches code patterns, reads relevant files, and returns structured findings with file:line citations. Use this for ANY question about the codebase structure, finding specific code, understanding how things work, or locating files. Do NOT fall back to grep/glob.
+        """Fast file/code discovery tool. Use it to find relevant files, then read them yourself with Read.
+
+        Best for: discovering where code lives, tracing call chains, finding definitions/usages.
+        After this tool returns citations, use Read to view the actual file contents.
 
         Args:
-            query: Natural language question about the codebase.
-            max_turns: Max agent exploration turns. None = unlimited. (default 16, or MAX_TURNS env).
-            citation: If true, returns only the <final_answer> block.
+            query: What to find — be specific (e.g. "Find the model, view, serializer for X").
+            max_turns: Max exploration turns (default 16, or MAX_TURNS env).
+            citation: If true, returns only the <final_answer> block with file:line citations.
             timeout: Max seconds before giving up (default: no limit).
+            work_dir: Project directory to explore (default: server startup dir).
         """
         from fastcontext.agent.agent_factory import make_fastcontext_agent
 
+        wd = Path(work_dir).resolve() if work_dir else cwd
         traj = f".fastcontext/mcp_trajectory_{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.jsonl"
-        agent = make_fastcontext_agent(trajectory_file=traj, work_dir=str(cwd))
+        agent = make_fastcontext_agent(trajectory_file=traj, work_dir=str(wd))
         mt = max_turns if max_turns != 0 else None
         try:
             if timeout and timeout > 0:
