@@ -48,7 +48,7 @@ class Message(BaseModel):
 
 
 class LLM:
-    def __init__(self, model: str, api_key: str, base_url: str, **kwargs) -> None:
+    def __init__(self, model: str | None, api_key: str | None, base_url: str | None, **kwargs) -> None:
         self.model = model
         self.base_url = base_url
         default_headers = kwargs.get("default_headers", None)
@@ -74,7 +74,7 @@ class LLM:
         }
         if self.max_tokens is not None:
             payload["max_completion_tokens"] = self.max_tokens
-        if "qwen" in self.model:
+        if self.model and "qwen" in self.model:
             payload["extra_body"] = {
                 "top_k": 20,
                 "chat_template_kwargs": {"enable_thinking": False},
