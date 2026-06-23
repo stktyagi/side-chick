@@ -22,18 +22,12 @@ PARENT=$(python3 -c "import json; t=json.load(open('$TASK_FILE')); print(t['pare
 DESCRIPTION=$(python3 -c "import json; print(json.load(open('$TASK_FILE'))['description'])")
 echo "=== Task: $DESCRIPTION ==="
 
-# Prepare source in tmpfs (no .git history from linux repo)
+# Prepare source in tmpfs (no .git at all)
 echo "--- Preparing source (commit=$COMMIT parent=$PARENT) ---"
 WORKDIR=$(mktemp -d)
 git --git-dir="$LINUX_REPO/.git" archive --format=tar "$PARENT" | tar -x -C "$WORKDIR"
-cd "$WORKDIR"
-git init
-git config user.email "test@test"
-git config user.name "test"
-git add -A
-git commit --allow-empty -m "Initial state (before change)" >/dev/null 2>&1
 
-# Save expected diff (use --git-dir to access the linux repo)
+# Save expected diff
 git --git-dir="$LINUX_REPO/.git" diff --no-color "${PARENT}..${COMMIT}" > "$RESULTS_DIR/expected.diff" 2>/dev/null || true
 echo "  Expected diff saved ($(wc -c < "$RESULTS_DIR/expected.diff") bytes)"
 
@@ -129,12 +123,19 @@ print(f'TOKENS: in={total_in} out={total_out} reasoning={total_reason} cache_w={
 END_TIME=$(date +%s)
 echo "Duration: $((END_TIME - START_TIME)) seconds" | tee -a "$RESULTS_DIR/opencode_output.txt"
 
-# Collect changes made
+# Collect changes — diff each changed file against git originals (no re-extract)
 echo "=== Collecting results ==="
-if git -C "$WORKDIR" rev-parse --git-dir >/dev/null 2>&1; then
-    git -C "$WORKDIR" diff --no-color > "$RESULTS_DIR/changes.diff" 2>/dev/null || true
-    git -C "$WORKDIR" diff --stat > "$RESULTS_DIR/changes_stat.txt" 2>/dev/null || true
-fi
+touch "$WORKDIR/.extracted"
+cd /tmp
+while IFS= read -r -d '' f; do
+    rel="${f#$WORKDIR/}"
+    if orig=$(git --git-dir="$LINUX_REPO/.git" show "$PARENT:$rel" 2>/dev/null); then
+        diff -u --label "a/$rel" --label "b/$rel" <(printf '%s\n' "$orig") "$f" 2>/dev/null
+    else
+        diff -u --label "a/$rel" --label "b/$rel" /dev/null "$f" 2>/dev/null
+    fi
+done < <(find "$WORKDIR" -type f -newer "$WORKDIR/.extracted" -print0 2>/dev/null) > "$RESULTS_DIR/changes.diff" || true
+grep '^diff ' "$RESULTS_DIR/changes.diff" > "$RESULTS_DIR/changes_stat.txt" 2>/dev/null || true
 
 # Cleanup
 rm -rf "$WORKDIR"
