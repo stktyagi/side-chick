@@ -81,24 +81,25 @@ class ToolSet:
             except Exception as e:
                 return ToolResult(tool_call_id=toll_call_id, failed=True, output=str(e))
 
-        # return asyncio.create_task(_call())
         return await _call()
 
     async def call(self, msg: Message) -> list[Message]:
         if not msg.tool_calls:
             return []
 
-        tool_results: list[ToolResult] = []
-        for c in msg.tool_calls:
+        async def run_with_timeout(c):
             try:
-                result = await asyncio.wait_for(
+                return await asyncio.wait_for(
                     self._single_tool_call(c.name, c.arguments, c.id), timeout=MAX_TOOLRUN_TIMEOUT
                 )
             except TimeoutError:
-                result = ToolResult(
+                return ToolResult(
                     tool_call_id=c.id, failed=True, output=f"Tool `{c.name}` timed out after {MAX_TOOLRUN_TIMEOUT}s."
                 )
-            tool_results.append(result)
+
+        tool_results: list[ToolResult] = await asyncio.gather(
+            *(run_with_timeout(c) for c in msg.tool_calls)
+        )
 
         tools_result_messages = []
         for tr in tool_results:

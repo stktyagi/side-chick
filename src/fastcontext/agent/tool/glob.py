@@ -42,13 +42,15 @@ class GlobTool(Tool):
         directory = params.get("directory", cwd)
         pattern = params.get("pattern")
 
-        p = Path(directory)
-        if not p.is_dir():
+        resolved_dir = Path(directory)
+        if not resolved_dir.is_absolute():
+            resolved_dir = Path(cwd, directory)
+        if not resolved_dir.is_dir():
             return f"The directory `{directory}` does not exist or is not a directory."
-        if not p.resolve().is_relative_to(Path(cwd).resolve()):
+        if not resolved_dir.resolve().is_relative_to(Path(cwd).resolve()):
             return f"Permission error: `{directory}` is not within the working directory `{cwd}`."
 
-        output = run(directory, pattern, cwd=cwd)
+        output = run(str(resolved_dir.resolve()), pattern, cwd=cwd)
 
         limit = 100
         matched_files = output.splitlines()

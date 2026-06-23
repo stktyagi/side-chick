@@ -34,7 +34,7 @@ async def test_llm_tools():
             "content": "read file content from ./test_llm.py and ./README.md",
         },
     ]
-    from fastcontext.agent.tool.read import ReadFileTool
+    from fastcontext.agent.tool.read import ReadTool as ReadFileTool
 
     msg = await llm.acall(
         messages=messages,

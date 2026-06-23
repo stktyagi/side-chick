@@ -1,3 +1,4 @@
+import asyncio
 from uuid import uuid4
 
 from fastcontext.agent.context import Context
@@ -35,7 +36,7 @@ class Agent:
         self.run_id = str(uuid4())
         self.n_turn = 0
 
-    async def _agent_loop(self, prompt: str, max_turns: int, verbose: bool, citation: bool) -> str:
+    async def _agent_loop(self, prompt: str, max_turns: int | None, verbose: bool, citation: bool) -> str:
         # user promp -> tool calls -> tool results -> tool calls ... -> assistant final answer
         n_turn = 0
         await self.context.add(Message(role="system", content=self.system_prompt))
@@ -43,23 +44,27 @@ class Agent:
 
         while True:
             n_turn += 1
-            if n_turn > max_turns + 1:
-                return f"No final answer after {max_turns} turns."
-            if n_turn == max_turns + 1:
-                await self.context.add(
-                    Message(
-                        role="user",
-                        content="Max number of turns reached. Please provide the final answer based on the information you have gathered.",
+            if max_turns is not None:
+                if n_turn > max_turns + 1:
+                    return f"No final answer after {max_turns} turns."
+                if n_turn == max_turns + 1:
+                    await self.context.add(
+                        Message(
+                            role="user",
+                            content="Max number of turns reached. Please provide the final answer based on the information you have gathered.",
+                        )
                     )
-                )
 
             # call LLM to get next action
             try:
-                step_msg = await self.llm.acall(
-                    messages=self.context.get_messages(),
-                    tools=self.toolset.schema_list(),
+                step_msg = await asyncio.wait_for(
+                    self.llm.acall(
+                        messages=self.context.get_messages(),
+                        tools=self.toolset.schema_list(),
+                    ),
+                    timeout=120,
                 )
-            except RequestyAPIError as e:
+            except (RequestyAPIError, asyncio.TimeoutError) as e:
                 error_msg = f"LLM API call failed. So stopping the agent.\nError details:\n{str(e)}"
                 await self.context.add(Message(role="assistant", content=error_msg))
                 return error_msg
@@ -75,7 +80,7 @@ class Agent:
                     return get_final_answer(step_msg.content)
                 return step_msg.content
 
-    async def run(self, prompt: str, max_turns: int = 4, verbose: bool = False, citation: bool = False) -> str:
+    async def run(self, prompt: str, max_turns: int | None = 4, verbose: bool = False, citation: bool = False) -> str:
         if verbose:
             print("=== Agent Runtime Info ===")
             print(f"Agent: {self.name}")

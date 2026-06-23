@@ -24,8 +24,8 @@ class GrepTool(Tool):
             },
             "output_mode": {
                 "type": "string",
-                "enum": ["content", "files_with_matches", "count"],
-                "description": 'content=matching lines, files_with_matches=paths only, count=match counts',
+                "enum": ["content", "files_with_matches", "count_matches"],
+                "description": 'content=matching lines, files_with_matches=paths only, count_matches=match counts',
             },
             "-B": {
                 "type": "number",
@@ -77,20 +77,24 @@ class GrepTool(Tool):
         output_mode = params.get("output_mode")
         before_context = params.get("-B")
         after_context = params.get("-A")
-        context = params.get("-C", 3)
+        context = params.get("-C")
         line_number = params.get("-n", True)
         ignore_case = params.get("-i", False)
-        type = params.get("type")
+        file_type = params.get("type")
         head_limit = params.get("head_limit")
         multiline = params.get("multiline")
 
-        if not Path(path).resolve().is_relative_to(Path(cwd).resolve()):
+        resolved_path = Path(path)
+        if not resolved_path.is_absolute():
+            resolved_path = Path(cwd, path)
+        if not resolved_path.resolve().is_relative_to(Path(cwd).resolve()):
             return f"Permission error: `{path}` is not within the working directory `{cwd}`."
 
+        search_path = str(resolved_path.resolve())
         output = run_rg(
             self._rg_path,
             pattern,
-            path,
+            search_path,
             glob=glob,
             output_mode=output_mode,
             before_context=before_context,
@@ -98,22 +102,16 @@ class GrepTool(Tool):
             context=context,
             line_number=line_number,
             ignore_case=ignore_case,
-            type=type,
+            type=file_type,
             multiline=multiline,
         )
         if not output:
             return "No matches found"
 
-        limit = 100
-        if head_limit is not None:
-            if head_limit < limit and head_limit > 0:
-                limit = head_limit
-
         lines = output.splitlines()
-        if len(lines) > limit:
-            output = "\n".join(lines[:limit])
-            truncated_hit = f"Results truncated to first {limit} lines"
-            output += f"\n{truncated_hit}"
+        if head_limit is not None and head_limit > 0 and len(lines) > head_limit:
+            output = "\n".join(lines[:head_limit])
+            output += f"\nResults truncated to first {head_limit} lines"
         return output
 
 

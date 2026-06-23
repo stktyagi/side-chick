@@ -53,7 +53,7 @@ class LLM:
         self.base_url = base_url
         default_headers = kwargs.get("default_headers", None)
         self.client = AsyncOpenAI(api_key=api_key, base_url=base_url, default_headers=default_headers)
-        self.max_tokens = kwargs.get("max_tokens", 32_000)
+        self.max_tokens = kwargs.get("max_tokens")
         self.temperature = kwargs.get("temperature", 1.0)
         self.top_p = kwargs.get("top_p", 0.95)
         self.debug = kwargs.get("debug", False)
@@ -69,11 +69,11 @@ class LLM:
         payload = {
             "model": self.model,
             "messages": messages,
-            # "max_tokens": self.max_tokens,
-            "max_completion_tokens": self.max_tokens,
             "temperature": self.temperature,
             "top_p": self.top_p,
         }
+        if self.max_tokens is not None:
+            payload["max_completion_tokens"] = self.max_tokens
         if "qwen" in self.model:
             payload["extra_body"] = {
                 "top_k": 20,
@@ -87,16 +87,12 @@ class LLM:
             print("LLM Payload:", payload)
 
         try:
-            if "claude" in self.model:
-                # Use the custom API call for claude models
-                from fastcontext.agent.llm_api import call_completion
-
-                response = call_completion(model=self.model, messages=messages, tools=tools)
-            else:
+            if self.debug:
                 print(f"DEBUG LLM: calling {self.model} with {len(messages)} msgs, tools={'yes' if tools else 'no'}")
-                response = await self.client.chat.completions.create(**payload)
+            response = await self.client.chat.completions.create(**payload)
+            if self.debug:
                 print(f"DEBUG LLM: got response, choices={len(response.choices)}")
-            usage = response.usage.to_dict()
+            usage = response.usage.to_dict() if response.usage else None
             content = None
             reasoning_content = None
             tool_calls: list[ChatCompletionMessageToolCall] = []
@@ -110,8 +106,10 @@ class LLM:
                     reasoning_content = response.choices[0].message.reasoning_text
                 tool_calls = response.choices[0].message.tool_calls
             elif len(response.choices) == 2:
-                reasoning_content = response.choices[0].message.reasoning_text
-                content = response.choices[0].message.content
+                msg = response.choices[0].message
+                if hasattr(msg, "reasoning_text"):
+                    reasoning_content = msg.reasoning_text
+                content = msg.content
                 for choice in response.choices:
                     if choice.finish_reason == "tool_calls" and choice.message.tool_calls:
                         tool_calls.extend(choice.message.tool_calls)
@@ -129,7 +127,7 @@ class LLM:
                     content=content,
                     reasoning_content=reasoning_content,
                     tool_calls=function_calls,
-                    tool_call_id=tool_calls[0].id,
+                    tool_call_id=tool_calls[0].id if len(tool_calls) == 1 else None,
                     model=self.model,
                     usage=usage,
                 )

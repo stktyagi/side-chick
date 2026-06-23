@@ -20,7 +20,7 @@ def main():
         help="agent trajectory file",
         default=f".fastcontext/trajectory_{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.jsonl",
     )
-    parser.add_argument("--max-turns", type=int, help="maximum number of turns", default=4)
+    parser.add_argument("--max-turns", type=int, help="maximum number of turns (0 = unlimited)", default=int(os.getenv("MAX_TURNS", "4")))
     parser.add_argument("--verbose", action="store_true", help="whether to run in verbose mode")
     parser.add_argument("--citation", action="store_true", help="Only return the citations in the final answer")
 
@@ -44,8 +44,9 @@ def main():
     agent = make_fastcontext_agent(trajectory_file=args.traj, work_dir=work_dir)
 
     prompt = args.query
+    max_turns = args.max_turns if args.max_turns != 0 else None
     final_output = asyncio.run(
-        agent.run(prompt=prompt, max_turns=args.max_turns, verbose=args.verbose, citation=args.citation)
+        agent.run(prompt=prompt, max_turns=max_turns, verbose=args.verbose, citation=args.citation)
     )
     print(final_output)
 
