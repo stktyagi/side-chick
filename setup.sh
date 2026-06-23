@@ -105,3 +105,29 @@ echo '}'
 echo ""
 echo "     Then set the env vars in the file, or let fastcontext load"
 echo '     them from ~/.config/fastcontext/env.'
+echo ""
+echo "  4. To use FastContext as an MCP tool in Claude Code, save the"
+echo "     following to ~/.claude/settings.json:"
+echo ""
+echo '{'
+echo '  "mcpServers": {'
+echo '    "fastcontext": {'
+echo '      "command": "uv",'
+echo '      "args": ["tool", "run", "fastcontext", "mcp"],'
+echo '      "env": {}'
+echo '    }'
+echo '  }'
+echo '}'
+echo ""
+echo "  5. To use FastContext as an MCP tool in Codex CLI, save the"
+echo "     following to ~/.codex/settings.json:"
+echo ""
+echo '{'
+echo '  "mcpServers": {'
+echo '    "fastcontext": {'
+echo '      "command": "uv",'
+echo '      "args": ["tool", "run", "fastcontext", "mcp"],'
+echo '      "env": {}'
+echo '    }'
+echo '  }'
+echo '}'
