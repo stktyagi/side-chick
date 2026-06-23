@@ -1,0 +1,64 @@
+{
+  "task_id": "000011_fe4bc1a08638",
+  "subject": "phy: spacemit: support K1 USB2.0 PHY controller",
+  "commit": "fe4bc1a08638309b6be1af37210930b856908eb7",
+  "description": "Implement a new USB 2.0 PHY driver for the SpacemiT K1 SoC, providing initialization, power management, and PHY operations integrated into the generic PHY framework.",
+  "mcp": {
+    "elapsed": 530.9,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 80918,
+      "output_tokens": 11944,
+      "reasoning_tokens": 12584,
+      "cache_write": 0,
+      "cache_read": 2651776,
+      "total_tokens": 105446,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 401490
+  },
+  "baseline": {
+    "elapsed": 397.7,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 71649,
+      "output_tokens": 9175,
+      "reasoning_tokens": 5124,
+      "cache_write": 0,
+      "cache_read": 2008064,
+      "total_tokens": 85948,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 347865
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "expected",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      }
+    }
+  }
+}

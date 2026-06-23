@@ -1,0 +1,31 @@
+{
+  "ranking": [
+    "expected",
+    "A",
+    "B"
+  ],
+  "scores": {
+    "expected": {
+      "correctness": 10,
+      "completeness": 10,
+      "quality": 10,
+      "total": 30
+    },
+    "A": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 0,
+      "total": 0
+    },
+    "B": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 0,
+      "total": 0
+    }
+  },
+  "reasoning": "Expected diff correctly adds READ_ONCE and WRITE_ONCE to fix the data race. Solutions A and B produced empty diffs, failing to address the issue at all, so they score 0 on all criteria.",
+  "best_match": "expected",
+  "task": "netfilter: nft_synproxy: avoid possible data-race on update operation",
+  "description": "Fix data race in synproxy by adding READ_ONCE to structure read to prevent concurrent modification issues."
+}

@@ -1,0 +1,64 @@
+{
+  "task_id": "000027_d3824968dbd9",
+  "subject": "dmaengine: at_xdmac: get the number of DMA channels from device tree",
+  "commit": "d3824968dbd9056844bbd5041020a3e28c748558",
+  "description": "Enable specification of DMA channel count via device tree property, falling back to hardware register when not provided.",
+  "mcp": {
+    "elapsed": 231.5,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 15253,
+      "output_tokens": 1065,
+      "reasoning_tokens": 1365,
+      "cache_write": 0,
+      "cache_read": 60416,
+      "total_tokens": 17683,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 43416
+  },
+  "baseline": {
+    "elapsed": 128.8,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 24367,
+      "output_tokens": 2413,
+      "reasoning_tokens": 2607,
+      "cache_write": 0,
+      "cache_read": 334208,
+      "total_tokens": 29387,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 89301
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "A",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      }
+    }
+  }
+}

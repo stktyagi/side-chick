@@ -1,0 +1,5 @@
+{
+  "error": "ERROR: HTTP Error 429: Too Many Requests",
+  "task": "phy: qcom-qmp: qserdes-com: Add v8 DP-specific qserdes register offsets",
+  "description": "Provide register offset header for DP QMP v8 PHY to enable future driver integration and DP support on new hardware"
+}

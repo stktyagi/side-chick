@@ -1,0 +1,69 @@
+{
+  "tasks": [
+    {
+      "task_id": "000037_2b03d9a40cd1",
+      "subject": "gpio: add gpio-line-mux driver",
+      "commit": "2b03d9a40cd1fea42fd65d2b66df80edc0f374c8",
+      "description": "Implement a virtual gpiochip providing 1-to-many mapping between virtual GPIOs and a real GPIO using a multiplexer control. The driver registers a gpiochip that uses a mux controller to select the active virtual line for GPIO operations, handling get/set by switching mux state and accessing the underlying GPIO.",
+      "mcp": {
+        "elapsed": 344.3,
+        "has_diff": false,
+        "tokens": {
+          "input_tokens": 50186,
+          "output_tokens": 6900,
+          "reasoning_tokens": 12035,
+          "cache_write": 0,
+          "cache_read": 1520768,
+          "total_tokens": 69121,
+          "cost": 0.0
+        },
+        "diff_size": 0,
+        "trajectory_size": 245578
+      },
+      "baseline": {
+        "elapsed": 465.2,
+        "has_diff": false,
+        "tokens": {
+          "input_tokens": 37146,
+          "output_tokens": 8416,
+          "reasoning_tokens": 17010,
+          "cache_write": 0,
+          "cache_read": 1570560,
+          "total_tokens": 62572,
+          "cost": 0.0
+        },
+        "diff_size": 0,
+        "trajectory_size": 319160
+      },
+      "verdict": {
+        "ranking": [
+          "expected",
+          "A",
+          "B"
+        ],
+        "best_match": "A",
+        "scores": {
+          "expected": {
+            "correctness": 10,
+            "completeness": 10,
+            "quality": 10,
+            "total": 30
+          },
+          "A": {
+            "correctness": 0,
+            "completeness": 0,
+            "quality": 0,
+            "total": 0
+          },
+          "B": {
+            "correctness": 0,
+            "completeness": 0,
+            "quality": 0,
+            "total": 0
+          }
+        }
+      }
+    }
+  ],
+  "timestamp": 1782186500.1572406
+}

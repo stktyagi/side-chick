@@ -1,0 +1,64 @@
+{
+  "task_id": "000070_2fc04340cf30",
+  "subject": "drm/tidss: Fix enable/disable order",
+  "commit": "2fc04340cf30d7960eed2525d26ffb8905aca02b",
+  "description": "Fix the atomic commit tail to ensure bridges are pre-enabled before crtc enable and post-disabled after crtc disable for OLDI and DSI encoders.",
+  "mcp": {
+    "elapsed": 549.7,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 25567,
+      "output_tokens": 2073,
+      "reasoning_tokens": 1620,
+      "cache_write": 0,
+      "cache_read": 188160,
+      "total_tokens": 29260,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 103257
+  },
+  "baseline": {
+    "elapsed": 456.7,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 43739,
+      "output_tokens": 3892,
+      "reasoning_tokens": 5939,
+      "cache_write": 0,
+      "cache_read": 686592,
+      "total_tokens": 53570,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 240868
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "A",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 1,
+        "completeness": 1,
+        "quality": 5,
+        "total": 7
+      },
+      "B": {
+        "correctness": 1,
+        "completeness": 1,
+        "quality": 5,
+        "total": 7
+      }
+    }
+  }
+}

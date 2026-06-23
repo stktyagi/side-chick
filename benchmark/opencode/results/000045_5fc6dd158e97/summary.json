@@ -1,0 +1,64 @@
+{
+  "task_id": "000045_5fc6dd158e97",
+  "subject": "virtio: add virtqueue_add_inbuf_cache_clean API",
+  "commit": "5fc6dd158e97d317aeb85ea930613f8db172603b",
+  "description": "Develop a new virtio interface function that accepts an attribute parameter, enabling optimized buffer caching strategies in guest drivers and improving DMA handling efficiency.",
+  "mcp": {
+    "elapsed": 837.9,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 60544,
+      "output_tokens": 17484,
+      "reasoning_tokens": 5882,
+      "cache_write": 0,
+      "cache_read": 3204352,
+      "total_tokens": 83910,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 432342
+  },
+  "baseline": {
+    "elapsed": 862.8,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 80860,
+      "output_tokens": 23095,
+      "reasoning_tokens": 8621,
+      "cache_write": 0,
+      "cache_read": 2990848,
+      "total_tokens": 112576,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 502926
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "A",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      }
+    }
+  }
+}

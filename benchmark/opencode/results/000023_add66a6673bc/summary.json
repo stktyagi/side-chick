@@ -1,0 +1,41 @@
+{
+  "task_id": "000023_add66a6673bc",
+  "subject": "phy: qcom: edp: Add Glymur platform support",
+  "commit": "add66a6673bc4aacd0ef0f3c4a51271501770b17",
+  "description": "Implement support for a new eDP PHY platform by adding version-specific operations, configuration structures, and register programming sequences to enable display functionality on the target hardware.",
+  "mcp": {
+    "elapsed": 504.7,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 86265,
+      "output_tokens": 8987,
+      "reasoning_tokens": 6862,
+      "cache_write": 0,
+      "cache_read": 2065920,
+      "total_tokens": 102114,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 401950
+  },
+  "baseline": {
+    "elapsed": 17317.5,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 11958,
+      "output_tokens": 776,
+      "reasoning_tokens": 641,
+      "cache_write": 0,
+      "cache_read": 16384,
+      "total_tokens": 13375,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 39746
+  },
+  "verdict": {
+    "ranking": [],
+    "best_match": "?",
+    "scores": {}
+  }
+}

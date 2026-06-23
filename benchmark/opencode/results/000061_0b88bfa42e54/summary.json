@@ -1,0 +1,64 @@
+{
+  "task_id": "000061_0b88bfa42e54",
+  "subject": "NFSD: net ref data still needs to be freed even if net hasn't startup",
+  "commit": "0b88bfa42e5468baff71909c2f324a495318532b",
+  "description": "Ensure network reference data is freed even if the network namespace hasn't started, preventing resource leak.",
+  "mcp": {
+    "elapsed": 490.8,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 38151,
+      "output_tokens": 1285,
+      "reasoning_tokens": 11558,
+      "cache_write": 0,
+      "cache_read": 182272,
+      "total_tokens": 50994,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 167717
+  },
+  "baseline": {
+    "elapsed": 530.8,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 30160,
+      "output_tokens": 3446,
+      "reasoning_tokens": 8740,
+      "cache_write": 0,
+      "cache_read": 689664,
+      "total_tokens": 42346,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 128220
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "A",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      }
+    }
+  }
+}

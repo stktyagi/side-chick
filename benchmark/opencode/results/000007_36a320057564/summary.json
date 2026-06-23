@@ -1,0 +1,64 @@
+{
+  "task_id": "000007_36a320057564",
+  "subject": "netfilter: nft_synproxy: avoid possible data-race on update operation",
+  "commit": "36a3200575642846a96436d503d46544533bb943",
+  "description": "Fix data race in synproxy by adding READ_ONCE to structure read to prevent concurrent modification issues.",
+  "mcp": {
+    "elapsed": 151.6,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 32485,
+      "output_tokens": 950,
+      "reasoning_tokens": 2317,
+      "cache_write": 0,
+      "cache_read": 154624,
+      "total_tokens": 35752,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 130452
+  },
+  "baseline": {
+    "elapsed": 264.4,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 42434,
+      "output_tokens": 7618,
+      "reasoning_tokens": 3602,
+      "cache_write": 0,
+      "cache_read": 592512,
+      "total_tokens": 53654,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 210470
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "expected",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      }
+    }
+  }
+}

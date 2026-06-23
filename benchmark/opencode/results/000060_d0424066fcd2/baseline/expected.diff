@@ -1,0 +1,67 @@
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 18b3688e0f..ac9b31d96f 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1759,7 +1759,7 @@ static struct nfs4_stid *find_one_sb_stid(struct nfs4_client *clp,
+ 
+ /**
+  * nfsd4_revoke_states - revoke all nfsv4 states associated with given filesystem
+- * @net:  used to identify instance of nfsd (there is one per net namespace)
++ * @nn:   used to identify instance of nfsd (there is one per net namespace)
+  * @sb:   super_block used to identify target filesystem
+  *
+  * All nfs4 states (open, lock, delegation, layout) held by the server instance
+@@ -1771,9 +1771,8 @@ static struct nfs4_stid *find_one_sb_stid(struct nfs4_client *clp,
+  * The clients which own the states will subsequently being notified that the
+  * states have been "admin-revoked".
+  */
+-void nfsd4_revoke_states(struct net *net, struct super_block *sb)
++void nfsd4_revoke_states(struct nfsd_net *nn, struct super_block *sb)
+ {
+-	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 	unsigned int idhashval;
+ 	unsigned int sc_types;
+ 
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index 36ce3ca97d..8cbfb9dc3a 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -259,6 +259,7 @@ static ssize_t write_unlock_fs(struct file *file, char *buf, size_t size)
+ 	struct path path;
+ 	char *fo_path;
+ 	int error;
++	struct nfsd_net *nn;
+ 
+ 	/* sanity check */
+ 	if (size == 0)
+@@ -285,7 +286,13 @@ static ssize_t write_unlock_fs(struct file *file, char *buf, size_t size)
+ 	 * 3.  Is that directory the root of an exported file system?
+ 	 */
+ 	error = nlmsvc_unlock_all_by_sb(path.dentry->d_sb);
+-	nfsd4_revoke_states(netns(file), path.dentry->d_sb);
++	mutex_lock(&nfsd_mutex);
++	nn = net_generic(netns(file), nfsd_net_id);
++	if (nn->nfsd_serv)
++		nfsd4_revoke_states(nn, path.dentry->d_sb);
++	else
++		error = -EINVAL;
++	mutex_unlock(&nfsd_mutex);
+ 
+ 	path_put(&path);
+ 	return error;
+diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
+index 50d2b29633..c75bf3abec 100644
+--- a/fs/nfsd/state.h
++++ b/fs/nfsd/state.h
+@@ -841,9 +841,9 @@ static inline void get_nfs4_file(struct nfs4_file *fi)
+ struct nfsd_file *find_any_file(struct nfs4_file *f);
+ 
+ #ifdef CONFIG_NFSD_V4
+-void nfsd4_revoke_states(struct net *net, struct super_block *sb);
++void nfsd4_revoke_states(struct nfsd_net *nn, struct super_block *sb);
+ #else
+-static inline void nfsd4_revoke_states(struct net *net, struct super_block *sb)
++static inline void nfsd4_revoke_states(struct nfsd_net *nn, struct super_block *sb)
+ {
+ }
+ #endif

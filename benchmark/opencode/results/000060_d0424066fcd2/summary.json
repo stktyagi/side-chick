@@ -1,0 +1,64 @@
+{
+  "task_id": "000060_d0424066fcd2",
+  "subject": "nfsd: check that server is running in unlock_filesystem",
+  "commit": "d0424066fcd294977f310964bed6f2a487fa4515",
+  "description": "Ensure the server is running before unlocking filesystem to prevent race conditions.",
+  "mcp": {
+    "elapsed": 484.8,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 31316,
+      "output_tokens": 4328,
+      "reasoning_tokens": 4525,
+      "cache_write": 0,
+      "cache_read": 565632,
+      "total_tokens": 40169,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 142786
+  },
+  "baseline": {
+    "elapsed": 776.9,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 63338,
+      "output_tokens": 5343,
+      "reasoning_tokens": 7966,
+      "cache_write": 0,
+      "cache_read": 1752576,
+      "total_tokens": 76647,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 279453
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "A",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      }
+    }
+  }
+}

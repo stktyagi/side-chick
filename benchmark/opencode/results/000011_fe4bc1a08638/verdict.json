@@ -1,0 +1,31 @@
+{
+  "ranking": [
+    "expected",
+    "A",
+    "B"
+  ],
+  "scores": {
+    "expected": {
+      "correctness": 10,
+      "completeness": 10,
+      "quality": 10,
+      "total": 30
+    },
+    "A": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 0,
+      "total": 0
+    },
+    "B": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 0,
+      "total": 0
+    }
+  },
+  "reasoning": "Both solutions A and B produced empty diffs, failing to implement the driver. The expected diff is correct and complete.",
+  "best_match": "expected",
+  "task": "phy: spacemit: support K1 USB2.0 PHY controller",
+  "description": "Implement a new USB 2.0 PHY driver for the SpacemiT K1 SoC, providing initialization, power management, and PHY operations integrated into the generic PHY framework."
+}

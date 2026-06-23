@@ -31,6 +31,9 @@ git --git-dir="$LINUX_REPO/.git" archive --format=tar "$PARENT" | tar -x -C "$WO
 git --git-dir="$LINUX_REPO/.git" diff --no-color "${PARENT}..${COMMIT}" > "$RESULTS_DIR/expected.diff" 2>/dev/null || true
 echo "  Expected diff saved ($(wc -c < "$RESULTS_DIR/expected.diff") bytes)"
 
+# Mark timestamp so we can find files modified by opencode
+touch "$WORKDIR/.extracted"
+
 # Setup opencode config
 if [ "$MODE" = "mcp" ]; then
     echo "=== Mode: with fastcontext MCP ==="
@@ -123,9 +126,53 @@ print(f'TOKENS: in={total_in} out={total_out} reasoning={total_reason} cache_w={
 END_TIME=$(date +%s)
 echo "Duration: $((END_TIME - START_TIME)) seconds" | tee -a "$RESULTS_DIR/opencode_output.txt"
 
+# Collect sub-agent token usage from MCP trajectories (separate from main opencode log)
+python3 -c "
+import json, os, glob
+
+workdir = '$WORKDIR'
+results = '$RESULTS_DIR'
+tokens_file = os.path.join(results, 'tokens.json')
+
+# Load main tokens
+with open(tokens_file) as f:
+    t = json.load(f)
+
+# Sum up tokens from all MCP sub-agent trajectories
+mcp_in = mcp_out = mcp_reason = 0
+for tj in glob.glob(os.path.join(workdir, '.fastcontext', 'mcp_trajectory_*.jsonl')):
+    with open(tj) as f:
+        for line in f:
+            line = line.strip()
+            if not line: continue
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if ev.get('type') != 'step_finish': continue
+            tk = ev.get('part', {}).get('tokens', {})
+            if not tk: continue
+            mcp_in += tk.get('input', 0)
+            mcp_out += tk.get('output', 0)
+            mcp_reason += tk.get('reasoning', 0)
+
+# Merge into main counts
+if mcp_in or mcp_out or mcp_reason:
+    t['mcp_input_tokens'] = mcp_in
+    t['mcp_output_tokens'] = mcp_out
+    t['mcp_reasoning_tokens'] = mcp_reason
+    t['input_tokens'] = t.get('input_tokens', 0) + mcp_in
+    t['output_tokens'] = t.get('output_tokens', 0) + mcp_out
+    t['reasoning_tokens'] = t.get('reasoning_tokens', 0) + mcp_reason
+    t['total_tokens'] = t.get('input_tokens', 0) + t.get('output_tokens', 0) + t.get('reasoning_tokens', 0)
+
+with open(tokens_file, 'w') as f:
+    json.dump(t, f, indent=2)
+print(f'MCP sub-agent tokens: in={mcp_in} out={mcp_out} reasoning={mcp_reason}')
+" 2>/dev/null || true
+
 # Collect changes — diff each changed file against git originals (no re-extract)
 echo "=== Collecting results ==="
-touch "$WORKDIR/.extracted"
 cd /tmp
 while IFS= read -r -d '' f; do
     rel="${f#$WORKDIR/}"

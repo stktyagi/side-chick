@@ -1,0 +1,64 @@
+{
+  "task_id": "000017_085ba7c91df3",
+  "subject": "phy: qcom: qmp-pcie: Add support for Glymur PCIe Gen4x2 PHY",
+  "commit": "085ba7c91df34e05366f9fecc9fa7a037598c30e",
+  "description": "Implement configuration for Glymur PCIe Gen4x2 PHY to enable proper initialization and operation.",
+  "mcp": {
+    "elapsed": 422.3,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 56940,
+      "output_tokens": 7711,
+      "reasoning_tokens": 5418,
+      "cache_write": 0,
+      "cache_read": 1621504,
+      "total_tokens": 70069,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 263215
+  },
+  "baseline": {
+    "elapsed": 225.2,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 38470,
+      "output_tokens": 1587,
+      "reasoning_tokens": 2122,
+      "cache_write": 0,
+      "cache_read": 132352,
+      "total_tokens": 42179,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 129378
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "expected",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 1,
+        "completeness": 1,
+        "quality": 2,
+        "total": 4
+      },
+      "B": {
+        "correctness": 1,
+        "completeness": 1,
+        "quality": 2,
+        "total": 4
+      }
+    }
+  }
+}

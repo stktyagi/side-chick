@@ -1,0 +1,64 @@
+{
+  "task_id": "000057_e901c7fce59e",
+  "subject": "NFSD: Fix permission check for read access to executable-only files",
+  "commit": "e901c7fce59e72d9f3c92733c379849c4034ac50",
+  "description": "Correct the access control check for read operations on executable-only files in the NFS server.",
+  "mcp": {
+    "elapsed": 389.0,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 11897,
+      "output_tokens": 1145,
+      "reasoning_tokens": 250,
+      "cache_write": 0,
+      "cache_read": 53248,
+      "total_tokens": 13292,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 24755
+  },
+  "baseline": {
+    "elapsed": 311.2,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 20726,
+      "output_tokens": 2863,
+      "reasoning_tokens": 12547,
+      "cache_write": 0,
+      "cache_read": 268672,
+      "total_tokens": 36136,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 90906
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "A",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      }
+    }
+  }
+}

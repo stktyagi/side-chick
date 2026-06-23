@@ -1,0 +1,31 @@
+{
+  "ranking": [
+    "expected",
+    "A",
+    "B"
+  ],
+  "scores": {
+    "expected": {
+      "correctness": 10,
+      "completeness": 10,
+      "quality": 10,
+      "total": 30
+    },
+    "A": {
+      "correctness": 1,
+      "completeness": 1,
+      "quality": 5,
+      "total": 7
+    },
+    "B": {
+      "correctness": 1,
+      "completeness": 1,
+      "quality": 5,
+      "total": 7
+    }
+  },
+  "reasoning": "Expected diff correctly implements the atomic commit tail reordering for OLDI/DSI encoders. Solutions A and B are empty diffs that do not address the task, thus score low.",
+  "best_match": "A",
+  "task": "drm/tidss: Fix enable/disable order",
+  "description": "Fix the atomic commit tail to ensure bridges are pre-enabled before crtc enable and post-disabled after crtc disable for OLDI and DSI encoders."
+}

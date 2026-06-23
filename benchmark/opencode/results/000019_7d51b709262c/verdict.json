@@ -1,0 +1,5 @@
+{
+  "error": "ERROR: HTTP Error 429: Too Many Requests",
+  "task": "phy: qcom: edp: Make the number of clocks flexible",
+  "description": "Change the clock data structure from fixed array to dynamic allocation to accommodate variable clock counts."
+}

@@ -1,0 +1,5 @@
+{
+  "error": "ERROR: HTTP Error 429: Too Many Requests",
+  "task": "phy: qcom: edp: Add Glymur platform support",
+  "description": "Implement support for a new eDP PHY platform by adding version-specific operations, configuration structures, and register programming sequences to enable display functionality on the target hardware."
+}

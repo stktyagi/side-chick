@@ -1,0 +1,64 @@
+{
+  "task_id": "000058_2857bd59feb6",
+  "subject": "nfsd: provide locking for v4_end_grace",
+  "commit": "2857bd59feb63fcf40fe4baf55401baea6b4feb4",
+  "description": "Add locking mechanism for the end of grace period in NFSv4 state management to ensure proper synchronization.",
+  "mcp": {
+    "elapsed": 249.3,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 29755,
+      "output_tokens": 4102,
+      "reasoning_tokens": 4167,
+      "cache_write": 0,
+      "cache_read": 492928,
+      "total_tokens": 38024,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 139673
+  },
+  "baseline": {
+    "elapsed": 285.2,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 34641,
+      "output_tokens": 4950,
+      "reasoning_tokens": 5376,
+      "cache_write": 0,
+      "cache_read": 683648,
+      "total_tokens": 44967,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 170332
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "expected",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      }
+    }
+  }
+}

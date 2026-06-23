@@ -1,0 +1,31 @@
+{
+  "ranking": [
+    "expected",
+    "A",
+    "B"
+  ],
+  "scores": {
+    "expected": {
+      "correctness": 10,
+      "completeness": 10,
+      "quality": 10,
+      "total": 30
+    },
+    "A": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 0,
+      "total": 0
+    },
+    "B": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 0,
+      "total": 0
+    }
+  },
+  "reasoning": "The expected diff correctly implements the requested feature: adding a helper function to fall back to the \"dma-channels\" device tree property when the hardware register is not available, and using it in the probe function. Solutions A and B provided empty diffs, meaning no changes were made to the codebase; therefore, they fail to address the task on all evaluation criteria. Both are equally lacking, but A is arbitrarily selected as best_match for tie-breaking.",
+  "best_match": "A",
+  "task": "dmaengine: at_xdmac: get the number of DMA channels from device tree",
+  "description": "Enable specification of DMA channel count via device tree property, falling back to hardware register when not provided."
+}

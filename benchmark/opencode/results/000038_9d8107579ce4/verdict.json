@@ -1,0 +1,31 @@
+{
+  "ranking": [
+    "expected",
+    "A",
+    "B"
+  ],
+  "scores": {
+    "expected": {
+      "correctness": 10,
+      "completeness": 10,
+      "quality": 10,
+      "total": 30
+    },
+    "A": {
+      "correctness": 1,
+      "completeness": 1,
+      "quality": 2,
+      "total": 4
+    },
+    "B": {
+      "correctness": 1,
+      "completeness": 1,
+      "quality": 2,
+      "total": 4
+    }
+  },
+  "reasoning": "Expected diff correctly simplifies IRQ handling by removing irqd_get_trigger_type and using fixed flags. Solutions A and B are empty diffs that do not implement any changes, thus are incorrect and incomplete.",
+  "best_match": "A",
+  "task": "gpio: max77759: drop use of irqd_get_trigger_type",
+  "description": "Simplify IRQ handling by removing the call to irqd_get_trigger_type and using fixed flags when requesting the threaded interrupt. This eliminates unnecessary complexity and ensures consistent IRQ behavior across platforms."
+}

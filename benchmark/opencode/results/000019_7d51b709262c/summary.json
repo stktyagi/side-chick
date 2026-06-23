@@ -1,0 +1,41 @@
+{
+  "task_id": "000019_7d51b709262c",
+  "subject": "phy: qcom: edp: Make the number of clocks flexible",
+  "commit": "7d51b709262c5aa31d2b9cd31444112c1b2dae03",
+  "description": "Change the clock data structure from fixed array to dynamic allocation to accommodate variable clock counts.",
+  "mcp": {
+    "elapsed": 17318.8,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 70022,
+      "output_tokens": 24588,
+      "reasoning_tokens": 21012,
+      "cache_write": 0,
+      "cache_read": 4814208,
+      "total_tokens": 115622,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 502062
+  },
+  "baseline": {
+    "elapsed": 719.3,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 64922,
+      "output_tokens": 11512,
+      "reasoning_tokens": 34089,
+      "cache_write": 0,
+      "cache_read": 3044096,
+      "total_tokens": 110523,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 333617
+  },
+  "verdict": {
+    "ranking": [],
+    "best_match": "?",
+    "scores": {}
+  }
+}

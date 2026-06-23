@@ -1,0 +1,7 @@
+[grep] (completed) request_threaded_irq
+[grep] (completed) irq_get_trigger_type
+[grep] (completed) irqd_get_trigger_type
+[finish] reason=tool-calls 
+[finish] reason=stop 
+TOKENS: in=17883 out=266 reasoning=250 cache_w=0 cache_r=9856 cost=0.0000
+Duration: 58 seconds

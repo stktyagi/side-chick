@@ -1,0 +1,64 @@
+{
+  "task_id": "000054_b13ef361d47f",
+  "subject": "dm: replace -EEXIST with -EBUSY",
+  "commit": "b13ef361d47f09b7aecd18e0383ecc83ff61057e",
+  "description": "Change error code returned when registering a duplicate target/type from EEXIST to EBUSY for better semantic correctness.",
+  "mcp": {
+    "elapsed": 1241.0,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 27665,
+      "output_tokens": 593,
+      "reasoning_tokens": 361,
+      "cache_write": 0,
+      "cache_read": 80640,
+      "total_tokens": 28619,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 60813
+  },
+  "baseline": {
+    "elapsed": 1251.8,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 33977,
+      "output_tokens": 1353,
+      "reasoning_tokens": 2426,
+      "cache_write": 0,
+      "cache_read": 152320,
+      "total_tokens": 37756,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 82192
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "A",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      }
+    }
+  }
+}

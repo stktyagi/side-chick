@@ -1,0 +1,31 @@
+{
+  "ranking": [
+    "expected",
+    "A",
+    "B"
+  ],
+  "scores": {
+    "expected": {
+      "correctness": 10,
+      "completeness": 10,
+      "quality": 10,
+      "total": 30
+    },
+    "A": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 0,
+      "total": 0
+    },
+    "B": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 0,
+      "total": 0
+    }
+  },
+  "reasoning": "Expected diff implements the required locking mechanism correctly. Both A and B are empty diffs, failing to implement anything.",
+  "best_match": "expected",
+  "task": "nfsd: provide locking for v4_end_grace",
+  "description": "Add locking mechanism for the end of grace period in NFSv4 state management to ensure proper synchronization."
+}

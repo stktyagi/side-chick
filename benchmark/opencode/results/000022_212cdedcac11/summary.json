@@ -1,0 +1,41 @@
+{
+  "task_id": "000022_212cdedcac11",
+  "subject": "phy: qcom-qmp: qserdes-com: Add v8 DP-specific qserdes register offsets",
+  "commit": "212cdedcac11c411d0e7c277e1cdcac5f1a20ba2",
+  "description": "Provide register offset header for DP QMP v8 PHY to enable future driver integration and DP support on new hardware",
+  "mcp": {
+    "elapsed": 17319.9,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 7872,
+      "output_tokens": 55,
+      "reasoning_tokens": 67,
+      "cache_write": 0,
+      "cache_read": 0,
+      "total_tokens": 7994,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 2714
+  },
+  "baseline": {
+    "elapsed": 326.0,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 89236,
+      "output_tokens": 4320,
+      "reasoning_tokens": 13169,
+      "cache_write": 0,
+      "cache_read": 1305856,
+      "total_tokens": 106725,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 332434
+  },
+  "verdict": {
+    "ranking": [],
+    "best_match": "?",
+    "scores": {}
+  }
+}

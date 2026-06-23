@@ -1,0 +1,64 @@
+{
+  "task_id": "000055_c1881c74f4df",
+  "subject": "dm-stripe: adjust max_hw_discard_sectors to avoid unnecessary discard bio splitting",
+  "commit": "c1881c74f4dfdadc1bf827d971a605b21ba5a587",
+  "description": "Modify the handling of max_hw_discard_sectors in the striped device mapper to avoid splitting discard bios unnecessarily.",
+  "mcp": {
+    "elapsed": 1355.1,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 30051,
+      "output_tokens": 2190,
+      "reasoning_tokens": 6483,
+      "cache_write": 0,
+      "cache_read": 247936,
+      "total_tokens": 38724,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 98318
+  },
+  "baseline": {
+    "elapsed": 1432.5,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 30623,
+      "output_tokens": 1514,
+      "reasoning_tokens": 5134,
+      "cache_write": 0,
+      "cache_read": 109696,
+      "total_tokens": 37271,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 75389
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "A",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 5,
+        "total": 5
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 5,
+        "total": 5
+      }
+    }
+  }
+}

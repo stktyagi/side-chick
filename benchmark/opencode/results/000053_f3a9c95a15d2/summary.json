@@ -1,0 +1,64 @@
+{
+  "task_id": "000053_f3a9c95a15d2",
+  "subject": "dm: remove fake timeout to avoid leak request",
+  "commit": "f3a9c95a15d2f4466acad5c68faeff79ca5e9f47",
+  "description": "Remove the fake timeout bypass in request completion to ensure requests are properly completed and avoid potential resource leaks.",
+  "mcp": {
+    "elapsed": 1449.8,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 41875,
+      "output_tokens": 10466,
+      "reasoning_tokens": 5786,
+      "cache_write": 0,
+      "cache_read": 778624,
+      "total_tokens": 58127,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 216146
+  },
+  "baseline": {
+    "elapsed": 1868.7,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 65226,
+      "output_tokens": 14829,
+      "reasoning_tokens": 7162,
+      "cache_write": 0,
+      "cache_read": 2268800,
+      "total_tokens": 87217,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 386764
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "A",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 5,
+        "total": 5
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 5,
+        "total": 5
+      }
+    }
+  }
+}

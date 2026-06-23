@@ -1,0 +1,31 @@
+{
+  "ranking": [
+    "expected",
+    "A",
+    "B"
+  ],
+  "scores": {
+    "expected": {
+      "correctness": 10,
+      "completeness": 10,
+      "quality": 10,
+      "total": 30
+    },
+    "A": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 5,
+      "total": 5
+    },
+    "B": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 5,
+      "total": 5
+    }
+  },
+  "reasoning": "Both AI solutions produced empty patches, failing to implement the required change. The expected patch correctly removes the fake timeout conditional.",
+  "best_match": "A",
+  "task": "dm: remove fake timeout to avoid leak request",
+  "description": "Remove the fake timeout bypass in request completion to ensure requests are properly completed and avoid potential resource leaks."
+}

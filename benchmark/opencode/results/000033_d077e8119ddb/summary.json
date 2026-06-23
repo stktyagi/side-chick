@@ -1,0 +1,64 @@
+{
+  "task_id": "000033_d077e8119ddb",
+  "subject": "netfilter: nf_tables: fix memory leak in nf_tables_newrule()",
+  "commit": "d077e8119ddbb4fca67540f1a52453631a47f221",
+  "description": "Fix memory leak in rule creation by ensuring flow rule is freed when chain usage limit prevents addition",
+  "mcp": {
+    "elapsed": 245.4,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 10959,
+      "output_tokens": 1025,
+      "reasoning_tokens": 597,
+      "cache_write": 0,
+      "cache_read": 49536,
+      "total_tokens": 12581,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 24006
+  },
+  "baseline": {
+    "elapsed": 343.2,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 11098,
+      "output_tokens": 1773,
+      "reasoning_tokens": 1914,
+      "cache_write": 0,
+      "cache_read": 141184,
+      "total_tokens": 14785,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 44019
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "A",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      }
+    }
+  }
+}

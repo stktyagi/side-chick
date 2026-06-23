@@ -1,0 +1,64 @@
+{
+  "task_id": "000008_2bafeb8d2f38",
+  "subject": "netfilter: replace -EEXIST with -EBUSY",
+  "commit": "2bafeb8d2f380c3a81d98bd7b78b854b564f9cd4",
+  "description": "Update error code returned when attempting to register duplicate netfilter module to use -EBUSY indicating resource busy.",
+  "mcp": {
+    "elapsed": 311.3,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 23045,
+      "output_tokens": 3365,
+      "reasoning_tokens": 4021,
+      "cache_write": 0,
+      "cache_read": 288128,
+      "total_tokens": 30431,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 92357
+  },
+  "baseline": {
+    "elapsed": 227.6,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 35414,
+      "output_tokens": 3613,
+      "reasoning_tokens": 4965,
+      "cache_write": 0,
+      "cache_read": 894208,
+      "total_tokens": 43992,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 168571
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "expected",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      },
+      "B": {
+        "correctness": 0,
+        "completeness": 0,
+        "quality": 0,
+        "total": 0
+      }
+    }
+  }
+}

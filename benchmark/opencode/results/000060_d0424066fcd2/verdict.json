@@ -1,0 +1,31 @@
+{
+  "ranking": [
+    "expected",
+    "A",
+    "B"
+  ],
+  "scores": {
+    "expected": {
+      "correctness": 10,
+      "completeness": 10,
+      "quality": 10,
+      "total": 30
+    },
+    "A": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 0,
+      "total": 0
+    },
+    "B": {
+      "correctness": 0,
+      "completeness": 0,
+      "quality": 0,
+      "total": 0
+    }
+  },
+  "reasoning": "Both A and B are empty diffs, implementing no changes, so they fail to address the task. Expected is correct and complete.",
+  "best_match": "A",
+  "task": "nfsd: check that server is running in unlock_filesystem",
+  "description": "Ensure the server is running before unlocking filesystem to prevent race conditions."
+}

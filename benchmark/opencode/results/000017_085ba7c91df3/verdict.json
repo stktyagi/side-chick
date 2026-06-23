@@ -1,0 +1,31 @@
+{
+  "ranking": [
+    "expected",
+    "A",
+    "B"
+  ],
+  "scores": {
+    "expected": {
+      "correctness": 10,
+      "completeness": 10,
+      "quality": 10,
+      "total": 30
+    },
+    "A": {
+      "correctness": 1,
+      "completeness": 1,
+      "quality": 2,
+      "total": 4
+    },
+    "B": {
+      "correctness": 1,
+      "completeness": 1,
+      "quality": 2,
+      "total": 4
+    }
+  },
+  "reasoning": "Expected diff correctly implements the Glymur Gen4x2 PCIe PHY configuration with proper structure and device table entry. Solutions A and B both produced empty diffs, failing to implement the necessary changes, resulting in very low scores for correctness and completeness.",
+  "best_match": "expected",
+  "task": "phy: qcom: qmp-pcie: Add support for Glymur PCIe Gen4x2 PHY",
+  "description": "Implement configuration for Glymur PCIe Gen4x2 PHY to enable proper initialization and operation."
+}

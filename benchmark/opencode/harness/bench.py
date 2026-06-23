@@ -52,7 +52,7 @@ def run_container(task_file, mode, results_dir, fc_cfg, timeout):
         "--mount",f"type=volume,source={LINUX_VOLUME},target=/linux-repo,ro",
         "--mount",f"type=bind,source={HERE/'inside'},target=/config,ro",
         "--mount",f"type=bind,source={HERE/'inside'/'run_single_test.sh'},target=/entrypoint.sh,ro",
-        "--mount",f"type=bind,source={HERE.parent.parent},target=/fastcontext",
+        "--mount",f"type=bind,source={HERE.parent.parent.parent},target=/fastcontext",
         "--mount",f"type=bind,source={results_dir},target=/results",
         "--mount","type=bind,source=/usr/bin/uv,target=/usr/local/bin/uv,ro",
         "--mount","type=bind,source=/usr/bin/opencode,target=/usr/local/bin/opencode,ro",

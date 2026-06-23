@@ -1,0 +1,64 @@
+{
+  "task_id": "000038_9d8107579ce4",
+  "subject": "gpio: max77759: drop use of irqd_get_trigger_type",
+  "commit": "9d8107579ce4f2369ea3f670585710c30b14a4b4",
+  "description": "Simplify IRQ handling by removing the call to irqd_get_trigger_type and using fixed flags when requesting the threaded interrupt. This eliminates unnecessary complexity and ensures consistent IRQ behavior across platforms.",
+  "mcp": {
+    "elapsed": 88.5,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 17883,
+      "output_tokens": 266,
+      "reasoning_tokens": 250,
+      "cache_write": 0,
+      "cache_read": 9856,
+      "total_tokens": 18399,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 33205
+  },
+  "baseline": {
+    "elapsed": 214.9,
+    "has_diff": false,
+    "tokens": {
+      "input_tokens": 16285,
+      "output_tokens": 886,
+      "reasoning_tokens": 1908,
+      "cache_write": 0,
+      "cache_read": 44672,
+      "total_tokens": 19079,
+      "cost": 0.0
+    },
+    "diff_size": 0,
+    "trajectory_size": 42026
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "A",
+      "B"
+    ],
+    "best_match": "A",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 1,
+        "completeness": 1,
+        "quality": 2,
+        "total": 4
+      },
+      "B": {
+        "correctness": 1,
+        "completeness": 1,
+        "quality": 2,
+        "total": 4
+      }
+    }
+  }
+}
