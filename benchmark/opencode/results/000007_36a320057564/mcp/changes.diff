@@ -1,0 +1,11 @@
+--- a/net/netfilter/nft_synproxy.c
++++ b/net/netfilter/nft_synproxy.c
+@@ -30,7 +30,7 @@
+ 	if (tcp->ece && tcp->cwr)
+ 		opts->options |= NF_SYNPROXY_OPT_ECN;
+ 
+-	opts->options &= priv->info.options;
++	opts->options &= info->options;
+ 	opts->mss_encode = opts->mss_option;
+ 	opts->mss_option = info->mss;
+ 	if (opts->options & NF_SYNPROXY_OPT_TIMESTAMP)

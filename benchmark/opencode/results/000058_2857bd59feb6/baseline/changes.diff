@@ -1,0 +1,46 @@
+--- a/fs/nfsd/netns.h
++++ b/fs/nfsd/netns.h
+@@ -10,6 +10,7 @@
+ 
+ #include <net/net_namespace.h>
+ #include <net/netns/generic.h>
++#include <linux/mutex.h>
+ #include <linux/filelock.h>
+ #include <linux/nfs4.h>
+ #include <linux/percpu_counter.h>
+@@ -66,6 +67,7 @@
+ 
+ 	struct lock_manager nfsd4_manager;
+ 	bool grace_ended;
++	struct mutex grace_lock;
+ 	time64_t boot_time;
+ 
+ 	struct dentry *nfsd_client_dir;
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -6573,12 +6573,16 @@
+ void
+ nfsd4_end_grace(struct nfsd_net *nn)
+ {
++	mutex_lock(&nn->grace_lock);
+ 	/* do nothing if grace period already ended */
+-	if (nn->grace_ended)
++	if (nn->grace_ended) {
++		mutex_unlock(&nn->grace_lock);
+ 		return;
++	}
+ 
+ 	trace_nfsd_grace_complete(nn);
+ 	nn->grace_ended = true;
++	mutex_unlock(&nn->grace_lock);
+ 	/*
+ 	 * If the server goes down again right now, an NFSv4
+ 	 * client will still be allowed to reclaim after it comes back up,
+@@ -8931,6 +8935,7 @@
+ 	nn->unconf_name_tree = RB_ROOT;
+ 	nn->boot_time = ktime_get_real_seconds();
+ 	nn->grace_ended = false;
++	mutex_init(&nn->grace_lock);
+ 	nn->nfsd4_manager.block_opens = true;
+ 	INIT_LIST_HEAD(&nn->nfsd4_manager.list);
+ 	INIT_LIST_HEAD(&nn->client_lru);

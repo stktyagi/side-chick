@@ -1,0 +1,31 @@
+{
+  "ranking": [
+    "expected",
+    "B",
+    "A"
+  ],
+  "scores": {
+    "expected": {
+      "correctness": 10,
+      "completeness": 10,
+      "quality": 10,
+      "total": 30
+    },
+    "A": {
+      "correctness": 2,
+      "completeness": 2,
+      "quality": 4,
+      "total": 8
+    },
+    "B": {
+      "correctness": 5,
+      "completeness": 6,
+      "quality": 6,
+      "total": 17
+    }
+  },
+  "reasoning": "Expected diff correctly renames and exports all specified internal functions with proper documentation and naming. Solution B renames and exports the core functions but uses different naming (missing 'commit_' prefix) and lacks documentation; also exports additional functions not required. Solution A does not address the required functions and instead exports unrelated internal helpers, failing to accomplish the task.",
+  "best_match": "B",
+  "task": "drm/atomic-helper: Export and namespace some functions",
+  "description": "Export and rename internal atomic helper functions to make them available as public API for other display drivers, enabling proper atomic commit helper usage."
+}

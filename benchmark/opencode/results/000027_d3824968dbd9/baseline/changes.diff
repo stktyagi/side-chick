@@ -1,0 +1,17 @@
+--- a/drivers/dma/arm-dma350.c
++++ b/drivers/dma/arm-dma350.c
+@@ -544,10 +544,13 @@
+ 		return dev_err_probe(dev, -ENODEV, "Not a DMA-350!");
+ 
+ 	reg = readl_relaxed(base + DMAINFO + DMA_BUILDCFG0);
+-	nchan = FIELD_GET(DMA_CFG_NUM_CHANNELS, reg) + 1;
+ 	dw = 1 << FIELD_GET(DMA_CFG_DATA_WIDTH, reg);
+ 	aw = FIELD_GET(DMA_CFG_ADDR_WIDTH, reg) + 1;
+ 
++	ret = device_property_read_u32(dev, "dma-channels", &nchan);
++	if (ret)
++		nchan = FIELD_GET(DMA_CFG_NUM_CHANNELS, reg) + 1;
++
+ 	dma_set_mask_and_coherent(dev, DMA_BIT_MASK(aw));
+ 	coherent = device_get_dma_attr(dev) == DEV_DMA_COHERENT;
+ 

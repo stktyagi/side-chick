@@ -1,0 +1,11 @@
+--- a/drivers/target/target_core_hba.c
++++ b/drivers/target/target_core_hba.c
+@@ -50,7 +50,7 @@
+ 			pr_err("backend %s already registered.\n", ops->name);
+ 			mutex_unlock(&backend_mutex);
+ 			kfree(tb);
+-			return -EEXIST;
++			return -EBUSY;
+ 		}
+ 	}
+ 	target_setup_backend_cits(tb);

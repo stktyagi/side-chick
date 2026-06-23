@@ -1,0 +1,309 @@
+--- a/include/drm/drm_atomic_helper.h
++++ b/include/drm/drm_atomic_helper.h
+@@ -62,6 +62,9 @@
+ int drm_atomic_helper_check_crtc_primary_plane(struct drm_crtc_state *crtc_state);
+ int drm_atomic_helper_check(struct drm_device *dev,
+ 			    struct drm_atomic_state *state);
++bool drm_atomic_helper_crtc_needs_disable(struct drm_crtc_state *old_state,
++					  struct drm_crtc_state *new_state);
++bool drm_atomic_helper_plane_crtc_active(const struct drm_plane_state *state);
+ void drm_atomic_helper_commit_tail(struct drm_atomic_state *state);
+ void drm_atomic_helper_commit_tail_rpm(struct drm_atomic_state *state);
+ int drm_atomic_helper_commit(struct drm_device *dev,
+@@ -72,6 +75,8 @@
+ void drm_atomic_helper_async_commit(struct drm_device *dev,
+ 				    struct drm_atomic_state *state);
+ 
++void drm_atomic_helper_set_fence_deadline(struct drm_device *dev,
++					  struct drm_atomic_state *state);
+ int drm_atomic_helper_wait_for_fences(struct drm_device *dev,
+ 					struct drm_atomic_state *state,
+ 					bool pre_swap);
+@@ -89,8 +94,26 @@
+ void
+ drm_atomic_helper_calc_timestamping_constants(struct drm_atomic_state *state);
+ 
++void drm_atomic_helper_disable_outputs(struct drm_device *dev,
++				       struct drm_atomic_state *state);
++void drm_atomic_helper_crtc_set_mode(struct drm_device *dev,
++				     struct drm_atomic_state *state);
++void drm_atomic_helper_encoder_bridge_disable(struct drm_device *dev,
++					      struct drm_atomic_state *state);
++void drm_atomic_helper_crtc_disable(struct drm_device *dev,
++				    struct drm_atomic_state *state);
++void drm_atomic_helper_encoder_bridge_post_disable(struct drm_device *dev,
++						   struct drm_atomic_state *state);
+ void drm_atomic_helper_commit_modeset_disables(struct drm_device *dev,
+ 					       struct drm_atomic_state *state);
++void drm_atomic_helper_crtc_enable(struct drm_device *dev,
++				   struct drm_atomic_state *state);
++void drm_atomic_helper_encoder_bridge_pre_enable(struct drm_device *dev,
++						 struct drm_atomic_state *state);
++void drm_atomic_helper_encoder_bridge_enable(struct drm_device *dev,
++					     struct drm_atomic_state *state);
++void drm_atomic_helper_commit_writebacks(struct drm_device *dev,
++					 struct drm_atomic_state *state);
+ void drm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
+ 					  struct drm_atomic_state *old_state);
+ 
+--- a/drivers/gpu/drm/drm_atomic_helper.c
++++ b/drivers/gpu/drm/drm_atomic_helper.c
+@@ -1131,9 +1131,9 @@
+ }
+ EXPORT_SYMBOL(drm_atomic_helper_check);
+ 
+-static bool
+-crtc_needs_disable(struct drm_crtc_state *old_state,
+-		   struct drm_crtc_state *new_state)
++bool
++drm_atomic_helper_crtc_needs_disable(struct drm_crtc_state *old_state,
++				     struct drm_crtc_state *new_state)
+ {
+ 	/*
+ 	 * No new_state means the CRTC is off, so the only criteria is whether
+@@ -1161,9 +1161,10 @@
+ 	       (old_state->self_refresh_active && !new_state->active) ||
+ 	       new_state->self_refresh_active;
+ }
++EXPORT_SYMBOL(drm_atomic_helper_crtc_needs_disable);
+ 
+-static void
+-encoder_bridge_disable(struct drm_device *dev, struct drm_atomic_state *state)
++void
++drm_atomic_helper_encoder_bridge_disable(struct drm_device *dev, struct drm_atomic_state *state)
+ {
+ 	struct drm_connector *connector;
+ 	struct drm_connector_state *old_conn_state, *new_conn_state;
+@@ -1191,7 +1192,7 @@
+ 		else
+ 			new_crtc_state = NULL;
+ 
+-		if (!crtc_needs_disable(old_crtc_state, new_crtc_state) ||
++		if (!drm_atomic_helper_crtc_needs_disable(old_crtc_state, new_crtc_state) ||
+ 		    !drm_atomic_crtc_needs_modeset(old_conn_state->crtc->state))
+ 			continue;
+ 
+@@ -1229,9 +1230,10 @@
+ 		}
+ 	}
+ }
++EXPORT_SYMBOL(drm_atomic_helper_encoder_bridge_disable);
+ 
+-static void
+-crtc_disable(struct drm_device *dev, struct drm_atomic_state *state)
++void
++drm_atomic_helper_crtc_disable(struct drm_device *dev, struct drm_atomic_state *state)
+ {
+ 	struct drm_crtc *crtc;
+ 	struct drm_crtc_state *old_crtc_state, *new_crtc_state;
+@@ -1245,7 +1247,7 @@
+ 		if (!drm_atomic_crtc_needs_modeset(new_crtc_state))
+ 			continue;
+ 
+-		if (!crtc_needs_disable(old_crtc_state, new_crtc_state))
++		if (!drm_atomic_helper_crtc_needs_disable(old_crtc_state, new_crtc_state))
+ 			continue;
+ 
+ 		funcs = crtc->helper_private;
+@@ -1282,9 +1284,10 @@
+ 			drm_crtc_vblank_put(crtc);
+ 	}
+ }
++EXPORT_SYMBOL(drm_atomic_helper_crtc_disable);
+ 
+-static void
+-encoder_bridge_post_disable(struct drm_device *dev, struct drm_atomic_state *state)
++void
++drm_atomic_helper_encoder_bridge_post_disable(struct drm_device *dev, struct drm_atomic_state *state)
+ {
+ 	struct drm_connector *connector;
+ 	struct drm_connector_state *old_conn_state, *new_conn_state;
+@@ -1310,7 +1313,7 @@
+ 		else
+ 			new_crtc_state = NULL;
+ 
+-		if (!crtc_needs_disable(old_crtc_state, new_crtc_state) ||
++		if (!drm_atomic_helper_crtc_needs_disable(old_crtc_state, new_crtc_state) ||
+ 		    !drm_atomic_crtc_needs_modeset(old_conn_state->crtc->state))
+ 			continue;
+ 
+@@ -1335,16 +1338,18 @@
+ 		drm_bridge_put(bridge);
+ 	}
+ }
++EXPORT_SYMBOL(drm_atomic_helper_encoder_bridge_post_disable);
+ 
+-static void
+-disable_outputs(struct drm_device *dev, struct drm_atomic_state *state)
++void
++drm_atomic_helper_disable_outputs(struct drm_device *dev, struct drm_atomic_state *state)
+ {
+-	encoder_bridge_disable(dev, state);
++	drm_atomic_helper_encoder_bridge_disable(dev, state);
+ 
+-	encoder_bridge_post_disable(dev, state);
++	drm_atomic_helper_encoder_bridge_post_disable(dev, state);
+ 
+-	crtc_disable(dev, state);
++	drm_atomic_helper_crtc_disable(dev, state);
+ }
++EXPORT_SYMBOL(drm_atomic_helper_disable_outputs);
+ 
+ /**
+  * drm_atomic_helper_update_legacy_modeset_state - update legacy modeset state
+@@ -1446,8 +1451,8 @@
+ }
+ EXPORT_SYMBOL(drm_atomic_helper_calc_timestamping_constants);
+ 
+-static void
+-crtc_set_mode(struct drm_device *dev, struct drm_atomic_state *state)
++void
++drm_atomic_helper_crtc_set_mode(struct drm_device *dev, struct drm_atomic_state *state)
+ {
+ 	struct drm_crtc *crtc;
+ 	struct drm_crtc_state *new_crtc_state;
+@@ -1508,6 +1513,7 @@
+ 		drm_bridge_put(bridge);
+ 	}
+ }
++EXPORT_SYMBOL(drm_atomic_helper_crtc_set_mode);
+ 
+ /**
+  * drm_atomic_helper_commit_modeset_disables - modeset commit to disable outputs
+@@ -1526,17 +1532,17 @@
+ void drm_atomic_helper_commit_modeset_disables(struct drm_device *dev,
+ 					       struct drm_atomic_state *state)
+ {
+-	disable_outputs(dev, state);
++	drm_atomic_helper_disable_outputs(dev, state);
+ 
+ 	drm_atomic_helper_update_legacy_modeset_state(dev, state);
+ 	drm_atomic_helper_calc_timestamping_constants(state);
+ 
+-	crtc_set_mode(dev, state);
++	drm_atomic_helper_crtc_set_mode(dev, state);
+ }
+ EXPORT_SYMBOL(drm_atomic_helper_commit_modeset_disables);
+ 
+-static void drm_atomic_helper_commit_writebacks(struct drm_device *dev,
+-						struct drm_atomic_state *state)
++void drm_atomic_helper_commit_writebacks(struct drm_device *dev,
++					struct drm_atomic_state *state)
+ {
+ 	struct drm_connector *connector;
+ 	struct drm_connector_state *new_conn_state;
+@@ -1555,9 +1561,10 @@
+ 		}
+ 	}
+ }
++EXPORT_SYMBOL(drm_atomic_helper_commit_writebacks);
+ 
+-static void
+-encoder_bridge_pre_enable(struct drm_device *dev, struct drm_atomic_state *state)
++void
++drm_atomic_helper_encoder_bridge_pre_enable(struct drm_device *dev, struct drm_atomic_state *state)
+ {
+ 	struct drm_connector *connector;
+ 	struct drm_connector_state *new_conn_state;
+@@ -1588,9 +1595,10 @@
+ 		drm_bridge_put(bridge);
+ 	}
+ }
++EXPORT_SYMBOL(drm_atomic_helper_encoder_bridge_pre_enable);
+ 
+-static void
+-crtc_enable(struct drm_device *dev, struct drm_atomic_state *state)
++void
++drm_atomic_helper_crtc_enable(struct drm_device *dev, struct drm_atomic_state *state)
+ {
+ 	struct drm_crtc *crtc;
+ 	struct drm_crtc_state *old_crtc_state;
+@@ -1619,9 +1627,10 @@
+ 		}
+ 	}
+ }
++EXPORT_SYMBOL(drm_atomic_helper_crtc_enable);
+ 
+-static void
+-encoder_bridge_enable(struct drm_device *dev, struct drm_atomic_state *state)
++void
++drm_atomic_helper_encoder_bridge_enable(struct drm_device *dev, struct drm_atomic_state *state)
+ {
+ 	struct drm_connector *connector;
+ 	struct drm_connector_state *new_conn_state;
+@@ -1664,6 +1673,7 @@
+ 		drm_bridge_put(bridge);
+ 	}
+ }
++EXPORT_SYMBOL(drm_atomic_helper_encoder_bridge_enable);
+ 
+ /**
+  * drm_atomic_helper_commit_modeset_enables - modeset commit to enable outputs
+@@ -1682,11 +1692,11 @@
+ void drm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
+ 					      struct drm_atomic_state *state)
+ {
+-	crtc_enable(dev, state);
++	drm_atomic_helper_crtc_enable(dev, state);
+ 
+-	encoder_bridge_pre_enable(dev, state);
++	drm_atomic_helper_encoder_bridge_pre_enable(dev, state);
+ 
+-	encoder_bridge_enable(dev, state);
++	drm_atomic_helper_encoder_bridge_enable(dev, state);
+ 
+ 	drm_atomic_helper_commit_writebacks(dev, state);
+ }
+@@ -1696,8 +1706,8 @@
+  * For atomic updates which touch just a single CRTC, calculate the time of the
+  * next vblank, and inform all the fences of the deadline.
+  */
+-static void set_fence_deadline(struct drm_device *dev,
+-			       struct drm_atomic_state *state)
++void drm_atomic_helper_set_fence_deadline(struct drm_device *dev,
++					  struct drm_atomic_state *state)
+ {
+ 	struct drm_crtc *crtc;
+ 	struct drm_crtc_state *new_crtc_state;
+@@ -1732,6 +1742,7 @@
+ 		dma_fence_set_deadline(new_plane_state->fence, vbltime);
+ 	}
+ }
++EXPORT_SYMBOL(drm_atomic_helper_set_fence_deadline);
+ 
+ /**
+  * drm_atomic_helper_wait_for_fences - wait for fences stashed in plane state
+@@ -1762,7 +1773,7 @@
+ 	struct drm_plane_state *new_plane_state;
+ 	int i, ret;
+ 
+-	set_fence_deadline(dev, state);
++	drm_atomic_helper_set_fence_deadline(dev, state);
+ 
+ 	for_each_new_plane_in_state(state, plane, new_plane_state, i) {
+ 		if (!new_plane_state->fence)
+@@ -2847,10 +2858,11 @@
+ }
+ EXPORT_SYMBOL(drm_atomic_helper_unprepare_planes);
+ 
+-static bool plane_crtc_active(const struct drm_plane_state *state)
++bool drm_atomic_helper_drm_atomic_helper_plane_crtc_active(const struct drm_plane_state *state)
+ {
+ 	return state->crtc && state->crtc->state->active;
+ }
++EXPORT_SYMBOL(drm_atomic_helper_plane_crtc_active);
+ 
+ /**
+  * drm_atomic_helper_commit_planes - commit plane state
+@@ -2939,9 +2951,9 @@
+ 			 * CRTC to avoid skipping planes being disabled on an
+ 			 * active CRTC.
+ 			 */
+-			if (!disabling && !plane_crtc_active(new_plane_state))
++			if (!disabling && !drm_atomic_helper_plane_crtc_active(new_plane_state))
+ 				continue;
+-			if (disabling && !plane_crtc_active(old_plane_state))
++			if (disabling && !drm_atomic_helper_plane_crtc_active(old_plane_state))
+ 				continue;
+ 		}
+ 

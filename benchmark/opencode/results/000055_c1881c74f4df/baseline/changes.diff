@@ -1,0 +1,10 @@
+--- a/drivers/md/dm-stripe.c
++++ b/drivers/md/dm-stripe.c
+@@ -459,6 +459,7 @@
+ 	unsigned int io_min, io_opt;
+ 
+ 	limits->chunk_sectors = sc->chunk_size;
++	limits->max_hw_discard_sectors = UINT_MAX;
+ 
+ 	if (!check_shl_overflow(sc->chunk_size, SECTOR_SHIFT, &io_min) &&
+ 	    !check_mul_overflow(io_min, sc->stripes, &io_opt)) {

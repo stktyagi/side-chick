@@ -1,0 +1,19 @@
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -568,8 +568,15 @@
+ 	}
+ 
+ 	rv = preinit_net(net, user_ns);
+-	if (rv < 0)
++	if (rv < 0) {
++		kfree(rcu_access_pointer(net->gen));
++#ifdef CONFIG_KEYS
++		key_remove_domain(net->key_domain);
++#endif
++		kmem_cache_free(net_cachep, net);
++		net = NULL;
+ 		goto dec_ucounts;
++	}
+ 	net->ucounts = ucounts;
+ 	get_user_ns(user_ns);
+ 

@@ -1,0 +1,16 @@
+--- a/drivers/md/dm-stripe.c
++++ b/drivers/md/dm-stripe.c
+@@ -465,6 +465,13 @@
+ 		limits->io_min = io_min;
+ 		limits->io_opt = io_opt;
+ 	}
++
++	if (limits->max_hw_discard_sectors) {
++		unsigned int max_hw_discard_sectors = limits->max_hw_discard_sectors;
++		if (check_mul_overflow(max_hw_discard_sectors, sc->stripes,
++				       &limits->max_hw_discard_sectors))
++			limits->max_hw_discard_sectors = UINT_MAX;
++	}
+ }
+ 
+ static struct target_type stripe_target = {

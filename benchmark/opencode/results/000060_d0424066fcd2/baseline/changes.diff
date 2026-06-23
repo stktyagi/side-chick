@@ -1,0 +1,26 @@
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -259,6 +259,8 @@
+ 	struct path path;
+ 	char *fo_path;
+ 	int error;
++	struct net *net = netns(file);
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 
+ 	/* sanity check */
+ 	if (size == 0)
+@@ -285,7 +287,13 @@
+ 	 * 3.  Is that directory the root of an exported file system?
+ 	 */
+ 	error = nlmsvc_unlock_all_by_sb(path.dentry->d_sb);
+-	nfsd4_revoke_states(netns(file), path.dentry->d_sb);
++
++	mutex_lock(&nfsd_mutex);
++	if (nn->nfsd_serv)
++		nfsd4_revoke_states(netns(file), path.dentry->d_sb);
++	else
++		error = -EINVAL;
++	mutex_unlock(&nfsd_mutex);
+ 
+ 	path_put(&path);
+ 	return error;

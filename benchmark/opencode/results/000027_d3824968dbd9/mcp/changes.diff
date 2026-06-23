@@ -1,0 +1,12 @@
+--- a/drivers/dma/arm-dma350.c
++++ b/drivers/dma/arm-dma350.c
+@@ -544,7 +544,8 @@
+ 		return dev_err_probe(dev, -ENODEV, "Not a DMA-350!");
+ 
+ 	reg = readl_relaxed(base + DMAINFO + DMA_BUILDCFG0);
+-	nchan = FIELD_GET(DMA_CFG_NUM_CHANNELS, reg) + 1;
++	if (of_property_read_u32(dev->of_node, "dma-channels", &nchan))
++		nchan = FIELD_GET(DMA_CFG_NUM_CHANNELS, reg) + 1;
+ 	dw = 1 << FIELD_GET(DMA_CFG_DATA_WIDTH, reg);
+ 	aw = FIELD_GET(DMA_CFG_ADDR_WIDTH, reg) + 1;
+ 

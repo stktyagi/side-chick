@@ -1,0 +1,377 @@
+--- a/block/blk-mq-debugfs.c
++++ b/block/blk-mq-debugfs.c
+@@ -83,7 +83,6 @@
+ 	QUEUE_FLAG_NAME(DYING),
+ 	QUEUE_FLAG_NAME(NOMERGES),
+ 	QUEUE_FLAG_NAME(SAME_COMP),
+-	QUEUE_FLAG_NAME(FAIL_IO),
+ 	QUEUE_FLAG_NAME(NOXMERGES),
+ 	QUEUE_FLAG_NAME(SAME_FORCE),
+ 	QUEUE_FLAG_NAME(INIT_DONE),
+--- a/block/blk-timeout.c
++++ b/block/blk-timeout.c
+@@ -5,68 +5,10 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/blkdev.h>
+-#include <linux/fault-inject.h>
+ 
+ #include "blk.h"
+ #include "blk-mq.h"
+ 
+-#ifdef CONFIG_FAIL_IO_TIMEOUT
+-
+-static DECLARE_FAULT_ATTR(fail_io_timeout);
+-
+-static int __init setup_fail_io_timeout(char *str)
+-{
+-	return setup_fault_attr(&fail_io_timeout, str);
+-}
+-__setup("fail_io_timeout=", setup_fail_io_timeout);
+-
+-bool __blk_should_fake_timeout(struct request_queue *q)
+-{
+-	return should_fail(&fail_io_timeout, 1);
+-}
+-EXPORT_SYMBOL_GPL(__blk_should_fake_timeout);
+-
+-static int __init fail_io_timeout_debugfs(void)
+-{
+-	struct dentry *dir = fault_create_debugfs_attr("fail_io_timeout",
+-						NULL, &fail_io_timeout);
+-
+-	return PTR_ERR_OR_ZERO(dir);
+-}
+-
+-late_initcall(fail_io_timeout_debugfs);
+-
+-ssize_t part_timeout_show(struct device *dev, struct device_attribute *attr,
+-			  char *buf)
+-{
+-	struct gendisk *disk = dev_to_disk(dev);
+-	int set = test_bit(QUEUE_FLAG_FAIL_IO, &disk->queue->queue_flags);
+-
+-	return sprintf(buf, "%d\n", set != 0);
+-}
+-
+-ssize_t part_timeout_store(struct device *dev, struct device_attribute *attr,
+-			   const char *buf, size_t count)
+-{
+-	struct gendisk *disk = dev_to_disk(dev);
+-	int val;
+-
+-	if (count) {
+-		struct request_queue *q = disk->queue;
+-		char *p = (char *) buf;
+-
+-		val = simple_strtoul(p, &p, 10);
+-		if (val)
+-			blk_queue_flag_set(QUEUE_FLAG_FAIL_IO, q);
+-		else
+-			blk_queue_flag_clear(QUEUE_FLAG_FAIL_IO, q);
+-	}
+-
+-	return count;
+-}
+-
+-#endif /* CONFIG_FAIL_IO_TIMEOUT */
+-
+ /**
+  * blk_abort_request - Request recovery for the specified command
+  * @req:	pointer to the request of interest
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -347,10 +347,6 @@
+ 		char *buf);
+ ssize_t part_fail_store(struct device *dev, struct device_attribute *attr,
+ 		const char *buf, size_t count);
+-ssize_t part_timeout_show(struct device *, struct device_attribute *, char *);
+-ssize_t part_timeout_store(struct device *, struct device_attribute *,
+-				const char *, size_t);
+-
+ struct bio *bio_split_discard(struct bio *bio, const struct queue_limits *lim,
+ 		unsigned *nsegs);
+ struct bio *bio_split_write_zeroes(struct bio *bio,
+--- a/block/bsg-lib.c
++++ b/block/bsg-lib.c
+@@ -193,8 +193,7 @@
+ 
+ 	job->result = result;
+ 	job->reply_payload_rcv_len = reply_payload_rcv_len;
+-	if (likely(!blk_should_fake_timeout(rq->q)))
+-		blk_mq_complete_request(rq);
++	blk_mq_complete_request(rq);
+ }
+ EXPORT_SYMBOL_GPL(bsg_job_done);
+ 
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1201,11 +1201,6 @@
+ 	__ATTR(make-it-fail, 0644, part_fail_show, part_fail_store);
+ #endif /* CONFIG_FAIL_MAKE_REQUEST */
+ 
+-#ifdef CONFIG_FAIL_IO_TIMEOUT
+-static struct device_attribute dev_attr_fail_timeout =
+-	__ATTR(io-timeout-fail, 0644, part_timeout_show, part_timeout_store);
+-#endif
+-
+ static struct attribute *disk_attrs[] = {
+ 	&dev_attr_range.attr,
+ 	&dev_attr_ext_range.attr,
+@@ -1227,9 +1222,6 @@
+ #ifdef CONFIG_FAIL_MAKE_REQUEST
+ 	&dev_attr_fail.attr,
+ #endif
+-#ifdef CONFIG_FAIL_IO_TIMEOUT
+-	&dev_attr_fail_timeout.attr,
+-#endif
+ 	NULL
+ };
+ 
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -325,8 +325,7 @@
+ 	cmd->bvec = NULL;
+ 	if (req_op(rq) == REQ_OP_WRITE)
+ 		kiocb_end_write(&cmd->iocb);
+-	if (likely(!blk_should_fake_timeout(rq->q)))
+-		blk_mq_complete_request(rq);
++	blk_mq_complete_request(rq);
+ }
+ 
+ static void lo_rw_aio_complete(struct kiocb *iocb, long ret)
+@@ -1939,8 +1938,7 @@
+ 			cmd->ret = ret;
+ 		else
+ 			cmd->ret = ret ? -EIO : 0;
+-		if (likely(!blk_should_fake_timeout(rq->q)))
+-			blk_mq_complete_request(rq);
++		blk_mq_complete_request(rq);
+ 	}
+ }
+ 
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -480,8 +480,7 @@
+ 	struct request *req = blk_mq_rq_from_pdu(cmd);
+ 
+ 	cmd->status = status;
+-	if (likely(!blk_should_fake_timeout(req->q)))
+-		blk_mq_complete_request(req);
++	blk_mq_complete_request(req);
+ }
+ 
+ /*
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -1004,7 +1004,7 @@
+ 		}
+ 
+ 		rq = blk_mq_rq_from_pdu(cmd);
+-		if (likely(!blk_should_fake_timeout(rq->q))) {
++		{
+ 			bool complete;
+ 
+ 			mutex_lock(&cmd->lock);
+--- a/drivers/block/null_blk/main.c
++++ b/drivers/block/null_blk/main.c
+@@ -1657,8 +1657,7 @@
+ 	}
+ 	cmd->error = BLK_STS_OK;
+ 	cmd->nq = nq;
+-	cmd->fake_timeout = should_timeout_request(rq) ||
+-		blk_should_fake_timeout(rq->q);
++	cmd->fake_timeout = should_timeout_request(rq);
+ 
+ 	if (should_requeue_request(rq)) {
+ 		/*
+--- a/drivers/block/ublk_drv.c
++++ b/drivers/block/ublk_drv.c
+@@ -1143,7 +1143,7 @@
+ 	local_bh_enable();
+ 	if (requeue)
+ 		blk_mq_requeue_request(req, true);
+-	else if (likely(!blk_should_fake_timeout(req->q)))
++	else
+ 		__blk_mq_end_request(req, BLK_STS_OK);
+ 
+ 	return;
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -362,8 +362,7 @@
+ 		while ((vbr = virtqueue_get_buf(vblk->vqs[qid].vq, &len)) != NULL) {
+ 			struct request *req = blk_mq_rq_from_pdu(vbr);
+ 
+-			if (likely(!blk_should_fake_timeout(req->q)))
+-				blk_mq_complete_request(req);
++			blk_mq_complete_request(req);
+ 			req_done = true;
+ 		}
+ 	} while (!virtqueue_enable_cb(vq));
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -1643,8 +1643,7 @@
+ 			BUG();
+ 		}
+ 
+-		if (likely(!blk_should_fake_timeout(req->q)))
+-			blk_mq_complete_request(req);
++		blk_mq_complete_request(req);
+ 	}
+ 
+ 	rinfo->ring.rsp_cons = i;
+--- a/drivers/block/zloop.c
++++ b/drivers/block/zloop.c
+@@ -366,8 +366,7 @@
+ 		return;
+ 	kfree(cmd->bvec);
+ 	cmd->bvec = NULL;
+-	if (likely(!blk_should_fake_timeout(rq->q)))
+-		blk_mq_complete_request(rq);
++	blk_mq_complete_request(rq);
+ }
+ 
+ static void zloop_rw_complete(struct kiocb *iocb, long ret)
+--- a/drivers/md/dm-rq.c
++++ b/drivers/md/dm-rq.c
+@@ -278,8 +278,7 @@
+ 	struct dm_rq_target_io *tio = tio_from_request(rq);
+ 
+ 	tio->error = error;
+-	if (likely(!blk_should_fake_timeout(rq->q)))
+-		blk_mq_complete_request(rq);
++	blk_mq_complete_request(rq);
+ }
+ 
+ /*
+--- a/drivers/mmc/core/block.c
++++ b/drivers/mmc/core/block.c
+@@ -1602,7 +1602,7 @@
+ 	 */
+ 	if (mq->in_recovery)
+ 		mmc_blk_cqe_complete_rq(mq, req);
+-	else if (likely(!blk_should_fake_timeout(req->q)))
++	else
+ 		blk_mq_complete_request(req);
+ }
+ 
+@@ -2139,7 +2139,7 @@
+ 	 */
+ 	if (mq->in_recovery)
+ 		mmc_blk_cqe_complete_rq(mq, req);
+-	else if (likely(!blk_should_fake_timeout(req->q)))
++	else
+ 		blk_mq_complete_request(req);
+ }
+ 
+@@ -2150,7 +2150,7 @@
+ 
+ 	if (host->cqe_enabled)
+ 		mmc_blk_cqe_complete_rq(mq, req);
+-	else if (likely(!blk_should_fake_timeout(req->q)))
++	else
+ 		mmc_blk_mq_complete_rq(mq, req);
+ }
+ 
+@@ -2204,7 +2204,7 @@
+ 	 */
+ 	if (mq->in_recovery) {
+ 		mmc_blk_mq_complete_rq(mq, req);
+-	} else if (likely(!blk_should_fake_timeout(req->q))) {
++	} else {
+ 		if (can_sleep)
+ 			blk_mq_complete_request_direct(req, mmc_blk_mq_complete);
+ 		else
+--- a/drivers/nvme/host/nvme.h
++++ b/drivers/nvme/host/nvme.h
+@@ -744,8 +744,6 @@
+ 	rq->result = result;
+ 	/* inject error when permitted by fault injection framework */
+ 	nvme_should_fail(req);
+-	if (unlikely(blk_should_fake_timeout(req->q)))
+-		return true;
+ 	return blk_mq_complete_request_remote(req);
+ }
+ 
+--- a/drivers/s390/block/dasd.c
++++ b/drivers/s390/block/dasd.c
+@@ -2734,7 +2734,7 @@
+ 		if (proc_bytes) {
+ 			blk_update_request(req, BLK_STS_OK, proc_bytes);
+ 			blk_mq_requeue_request(req, true);
+-		} else if (likely(!blk_should_fake_timeout(req->q))) {
++		} else {
+ 			blk_mq_complete_request(req);
+ 		}
+ 	}
+--- a/drivers/s390/block/scm_blk.c
++++ b/drivers/s390/block/scm_blk.c
+@@ -255,8 +255,7 @@
+ 	for (i = 0; i < nr_requests_per_io && scmrq->request[i]; i++) {
+ 		error = blk_mq_rq_to_pdu(scmrq->request[i]);
+ 		*error = scmrq->error;
+-		if (likely(!blk_should_fake_timeout(scmrq->request[i]->q)))
+-			blk_mq_complete_request(scmrq->request[i]);
++		blk_mq_complete_request(scmrq->request[i]);
+ 	}
+ 
+ 	atomic_dec(&bdev->queued_reqs);
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1733,8 +1733,6 @@
+ 		return;
+ 	}
+ 
+-	if (unlikely(blk_should_fake_timeout(scsi_cmd_to_rq(cmd)->q)))
+-		return;
+ 	if (unlikely(test_and_set_bit(SCMD_STATE_COMPLETE, &cmd->state)))
+ 		return;
+ 	trace_scsi_dispatch_cmd_done(cmd);
+--- a/include/linux/blk-mq.h
++++ b/include/linux/blk-mq.h
+@@ -978,15 +978,6 @@
+ 
+ unsigned int blk_mq_rq_cpu(struct request *rq);
+ 
+-bool __blk_should_fake_timeout(struct request_queue *q);
+-static inline bool blk_should_fake_timeout(struct request_queue *q)
+-{
+-	if (IS_ENABLED(CONFIG_FAIL_IO_TIMEOUT) &&
+-	    test_bit(QUEUE_FLAG_FAIL_IO, &q->queue_flags))
+-		return __blk_should_fake_timeout(q);
+-	return false;
+-}
+-
+ /**
+  * blk_mq_rq_from_pdu - cast a PDU to a request
+  * @pdu: the PDU (Protocol Data Unit) to be casted
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -654,7 +654,6 @@
+ 	QUEUE_FLAG_DYING,		/* queue being torn down */
+ 	QUEUE_FLAG_NOMERGES,		/* disable merge attempts */
+ 	QUEUE_FLAG_SAME_COMP,		/* complete on same CPU-group */
+-	QUEUE_FLAG_FAIL_IO,		/* fake timeout */
+ 	QUEUE_FLAG_NOXMERGES,		/* No extended merges */
+ 	QUEUE_FLAG_SAME_FORCE,		/* force complete on same CPU */
+ 	QUEUE_FLAG_INIT_DONE,		/* queue is initialized */
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -2061,17 +2061,6 @@
+ 	help
+ 	  Provide fault-injection capability for disk IO.
+ 
+-config FAIL_IO_TIMEOUT
+-	bool "Fault-injection capability for faking disk interrupts"
+-	depends on FAULT_INJECTION && BLOCK
+-	help
+-	  Provide fault-injection capability on end IO handling. This
+-	  will make the block layer "forget" an interrupt as configured,
+-	  thus exercising the error handling.
+-
+-	  Only works with drivers that use the generic timeout handling,
+-	  for others it won't do anything.
+-
+ config FAIL_FUTEX
+ 	bool "Fault-injection capability for futexes"
+ 	select DEBUG_FS

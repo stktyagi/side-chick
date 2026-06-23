@@ -1,0 +1,783 @@
+--- a/include/linux/timekeeper_internal.h
++++ b/include/linux/timekeeper_internal.h
+@@ -17,12 +17,28 @@
+  * @TIMEKEEPER_AUX_FIRST:	The first AUX timekeeper
+  * @TIMEKEEPER_AUX_LAST:	The last AUX timekeeper
+  * @TIMEKEEPERS_MAX:		The maximum number of timekeepers managed
++ *
++ * These are fixed compile-time constants. The actual number of active AUX
++ * timekeepers is determined at boot time by nr_aux_clocks (stored in the
++ * timekeeping subsystem). Arrays indexed by timekeeper_ids are dynamically
++ * allocated based on TIMEKEEPERS_MAX.
++ */
++/*
++ * Kernel MAX_AUX_CLOCKS: use the config value if set, otherwise fall back
++ * to the UAPI default (8). This is overridden here so that the enum below
++ * picks up the right value regardless of include order.
+  */
++#ifdef CONFIG_MAX_AUX_CLOCKS
++#define KERNEL_MAX_AUX_CLOCKS	CONFIG_MAX_AUX_CLOCKS
++#else
++#define KERNEL_MAX_AUX_CLOCKS	MAX_AUX_CLOCKS
++#endif
++
+ enum timekeeper_ids {
+-	TIMEKEEPER_CORE,
++	TIMEKEEPER_CORE = 0,
+ #ifdef CONFIG_POSIX_AUX_CLOCKS
+-	TIMEKEEPER_AUX_FIRST,
+-	TIMEKEEPER_AUX_LAST = TIMEKEEPER_AUX_FIRST + MAX_AUX_CLOCKS - 1,
++	TIMEKEEPER_AUX_FIRST = 1,
++	TIMEKEEPER_AUX_LAST = TIMEKEEPER_AUX_FIRST + KERNEL_MAX_AUX_CLOCKS - 1,
+ #endif
+ 	TIMEKEEPERS_MAX,
+ };
+@@ -69,6 +85,7 @@
+  * @offs_tai:			Offset clock monotonic -> clock tai
+  * @offs_aux:			Offset clock monotonic -> clock AUX
+  * @coarse_nsec:		The nanoseconds part for coarse time getters
++ * @nr_aux_clocks:		Number of configured auxiliary clocks
+  * @id:				The timekeeper ID
+  * @tkr_raw:			The readout base structure for CLOCK_MONOTONIC_RAW
+  * @raw_sec:			CLOCK_MONOTONIC_RAW  time in seconds
+@@ -152,6 +169,7 @@
+ 		ktime_t		offs_aux;
+ 	};
+ 	u32			coarse_nsec;
++	u16			nr_aux_clocks;
+ 	enum timekeeper_ids	id;
+ 
+ 	/* Cacheline 2: */
+--- a/include/linux/vdso_datastore.h
++++ b/include/linux/vdso_datastore.h
+@@ -7,4 +7,8 @@
+ extern const struct vm_special_mapping vdso_vvar_mapping;
+ struct vm_area_struct *vdso_install_vvar_mapping(struct mm_struct *mm, unsigned long addr);
+ 
++#ifdef CONFIG_GENERIC_GETTIMEOFDAY
++int __init vdso_time_data_init(unsigned int nr_clock_ids, unsigned int nr_aux);
++#endif
++
+ #endif /* _LINUX_VDSO_DATASTORE_H */
+--- a/include/uapi/linux/time.h
++++ b/include/uapi/linux/time.h
+@@ -70,6 +70,11 @@
+  * enabling a clock ID. These clock can be steered independently of the
+  * core timekeeper. The kernel can support up to 8 auxiliary clocks, but
+  * the actual limit depends on eventual architecture constraints vs. VDSO.
++ *
++ * The maximum number of auxiliary clocks for kernel builds is controlled
++ * by CONFIG_MAX_AUX_CLOCKS (default 8). The UAPI value of 8 defines the
++ * minimum guaranteed userspace clock ID range (CLOCK_AUX through
++ * CLOCK_AUX + 7). The kernel may support more via config.
+  */
+ #define CLOCK_AUX			MAX_CLOCKS
+ #define MAX_AUX_CLOCKS			8
+--- a/include/vdso/datapage.h
++++ b/include/vdso/datapage.h
+@@ -38,6 +38,11 @@
+ };
+ #endif
+ 
++/*
++ * VDSO_BASES is the default number of clock IDs per vdso_clock (basetime array
++ * size). It can be overridden at runtime by nr_clock_ids in struct vdso_time_data.
++ * The default compile-time value is retained for static initializers.
++ */
+ #define VDSO_BASES	(CLOCK_TAI + 1)
+ #define VDSO_BASE_AUX	0
+ #define VDSO_HRES	(BIT(CLOCK_REALTIME)		| \
+@@ -80,8 +85,11 @@
+  * @mask:		clocksource mask
+  * @mult:		clocksource multiplier
+  * @shift:		clocksource shift
+- * @basetime[clock_id]:	basetime per clock_id
+- * @offset[clock_id]:	time namespace offset per clock_id
++ *
++ * The basetime[] and offset[] arrays are no longer embedded inline. They
++ * follow each vdso_clock instance in memory. Use __vdso_basetime() and
++ * __vdso_offset() to access them. The number of entries in those arrays
++ * is stored in vdso_time_data.nr_clock_ids.
+  *
+  * See also struct vdso_time_data for basic access and ordering information as
+  * struct vdso_clock is used there.
+@@ -108,44 +116,151 @@
+ 	u64			mask;
+ 	u32			mult;
+ 	u32			shift;
+-
+-	union {
+-		struct vdso_timestamp	basetime[VDSO_BASES];
+-		struct timens_offset	offset[VDSO_BASES];
+-	};
+ };
+ 
+ /**
+  * struct vdso_time_data - vdso datapage representation
+  * @arch_data:		architecture specific data (optional, defaults
+  *			to an empty struct)
+- * @clock_data:		clocksource related data (array)
+- * @aux_clock_data:	auxiliary clocksource related data (array)
+  * @tz_minuteswest:	minutes west of Greenwich
+  * @tz_dsttime:		type of DST correction
+  * @hrtimer_res:	hrtimer resolution
+  * @__unused:		unused
++ * @nr_clock_ids:	number of clock IDs per clock (size of basetime array)
++ * @nr_aux_clocks:	number of auxiliary clocks configured
++ * @clock_data_off:	byte offset from this struct to the clock_data[] array
++ * @aux_clock_data_off:	byte offset from this struct to aux_clock_data[] array
++ *
++ * clock_data and aux_clock_data are no longer fixed inline arrays. They are
++ * located at byte offsets clock_data_off and aux_clock_data_off from the
++ * start of this struct. Each entry in these arrays is a struct vdso_clock
++ * followed immediately by basetime[nr_clock_ids] (or offset[nr_clock_ids] for
++ * time namespace pages). Use __vdso_clock_data(), __vdso_aux_clock_data(),
++ * __vdso_basetime(), and __vdso_offset() helpers for access.
++ *
++ * The total allocated size can be computed with vdso_clock_data_size() and
++ * vdso_time_data_total_size().
+  *
+  * vdso_time_data will be accessed by 64 bit and compat code at the same time
+  * so we should be careful before modifying this structure.
+  *
+- * The ordering of the struct members is optimized to have fast acces to the
++ * The ordering of the struct members is optimized to have fast access to the
+  * often required struct members which are related to CLOCK_REALTIME and
+  * CLOCK_MONOTONIC. This information is stored in the first cache lines.
+  */
+ struct vdso_time_data {
+ 	struct arch_vdso_time_data	arch_data;
+ 
+-	struct vdso_clock		clock_data[CS_BASES];
+-	struct vdso_clock		aux_clock_data[MAX_AUX_CLOCKS];
+-
+ 	s32				tz_minuteswest;
+ 	s32				tz_dsttime;
+ 	u32				hrtimer_res;
+ 	u32				__unused;
++
++	u16				nr_clock_ids;
++	u16				nr_aux_clocks;
++	u32				clock_data_off;
++	u32				aux_clock_data_off;
+ } ____cacheline_aligned;
+ 
+ /**
++ * vdso_clock_instance_size - Size of a single vdso_clock including its basetime array
++ * @nr_ids:	Number of clock IDs (basetime / offset entries)
++ *
++ * Each vdso_clock is followed in memory by its basetime[] (or offset[]) array
++ * of @nr_ids elements.
++ */
++static __always_inline size_t vdso_clock_instance_size(unsigned int nr_ids)
++{
++	return sizeof(struct vdso_clock) + nr_ids * sizeof(struct vdso_timestamp);
++}
++
++/**
++ * vdso_clock_data_size - Size of the clock_data array
++ * @nr_bases:	Number of entries in clock_data[] (always CS_BASES = 2)
++ * @nr_ids:	Number of clock IDs per clock
++ */
++static __always_inline size_t vdso_clock_data_size(unsigned int nr_bases,
++						   unsigned int nr_ids)
++{
++	return nr_bases * vdso_clock_instance_size(nr_ids);
++}
++
++/**
++ * vdso_aux_clock_data_size - Size of the aux_clock_data array
++ * @nr_aux:	Number of auxiliary clocks
++ * @nr_ids:	Number of clock IDs per clock
++ */
++static __always_inline size_t vdso_aux_clock_data_size(unsigned int nr_aux,
++							unsigned int nr_ids)
++{
++	return nr_aux * vdso_clock_instance_size(nr_ids);
++}
++
++/**
++ * vdso_time_data_total_size - Total allocation size for a vdso_time_data page
++ * @nr_ids:	Number of clock IDs per clock
++ * @nr_aux:	Number of auxiliary clocks
++ *
++ * Returns the total byte size needed for the vdso_time_data header plus all
++ * clock data and auxiliary clock data arrays.
++ */
++static __always_inline size_t vdso_time_data_total_size(unsigned int nr_ids,
++							 unsigned int nr_aux)
++{
++	return sizeof(struct vdso_time_data) +
++	       vdso_clock_data_size(CS_BASES, nr_ids) +
++	       vdso_aux_clock_data_size(nr_aux, nr_ids);
++}
++
++/**
++ * __vdso_clock_data - Return pointer to clock_data[] in a vdso_time_data page
++ * @vd:		Pointer to the vdso_time_data
++ *
++ * clock_data[CS_HRES_COARSE] and clock_data[CS_RAW] are accessed via
++ * indices 0 and 1 on the returned pointer.
++ */
++static __always_inline struct vdso_clock *
++__vdso_clock_data(const struct vdso_time_data *vd)
++{
++	return (struct vdso_clock *)((void *)vd + vd->clock_data_off);
++}
++
++/**
++ * __vdso_aux_clock_data - Return pointer to aux_clock_data[] in a vdso_time_data page
++ * @vd:		Pointer to the vdso_time_data
++ */
++static __always_inline struct vdso_clock *
++__vdso_aux_clock_data(const struct vdso_time_data *vd)
++{
++	return (struct vdso_clock *)((void *)vd + vd->aux_clock_data_off);
++}
++
++/**
++ * __vdso_basetime - Return basetime array for a given vdso_clock
++ * @vc:		Pointer to the vdso_clock
++ *
++ * The basetime array follows immediately after the fixed vdso_clock fields.
++ */
++static __always_inline struct vdso_timestamp *
++__vdso_basetime(const struct vdso_clock *vc)
++{
++	return (struct vdso_timestamp *)(vc + 1);
++}
++
++/**
++ * __vdso_offset - Return timens_offset array for a given vdso_clock
++ * @vc:		Pointer to the vdso_clock
++ *
++ * The offset array follows immediately after the fixed vdso_clock fields,
++ * at the same location as the basetime array (they are a union).
++ */
++static __always_inline struct timens_offset *
++__vdso_offset(const struct vdso_clock *vc)
++{
++	return (struct timens_offset *)(vc + 1);
++}
++
++/**
+  * struct vdso_rng_data - vdso RNG state information
+  * @generation:	counter representing the number of RNG reseeds
+  * @is_ready:	boolean signaling whether the RNG is initialized
+--- a/include/vdso/helpers.h
++++ b/include/vdso/helpers.h
+@@ -64,7 +64,7 @@
+ 
+ static __always_inline void vdso_write_begin(struct vdso_time_data *vd)
+ {
+-	struct vdso_clock *vc = vd->clock_data;
++	struct vdso_clock *vc = __vdso_clock_data(vd);
+ 
+ 	vdso_write_seq_begin(&vc[CS_HRES_COARSE]);
+ 	vdso_write_seq_begin(&vc[CS_RAW]);
+@@ -74,7 +74,7 @@
+ 
+ static __always_inline void vdso_write_end(struct vdso_time_data *vd)
+ {
+-	struct vdso_clock *vc = vd->clock_data;
++	struct vdso_clock *vc = __vdso_clock_data(vd);
+ 
+ 	/* Ensure the data update is visible before the sequence is set valid again */
+ 	smp_wmb();
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -221,4 +221,15 @@
+ 	  and other clock domains, which are not correlated to the TAI/NTP
+ 	  notion of time.
+ 
++config MAX_AUX_CLOCKS
++	int "Maximum number of auxiliary clocks"
++	depends on POSIX_AUX_CLOCKS
++	range 1 64
++	default 8
++	help
++	  Number of auxiliary clock IDs to support. The kernel allocates
++	  timekeeper and VDSO data structures dynamically based on this
++	  value. Larger values allow more independent clock domains but
++	  increase memory usage for VDSO data pages.
++
+ endmenu
+--- a/kernel/time/namespace.c
++++ b/kernel/time/namespace.c
+@@ -178,7 +178,7 @@
+ static void timens_setup_vdso_clock_data(struct vdso_clock *vc,
+ 					 struct time_namespace *ns)
+ {
+-	struct timens_offset *offset = vc->offset;
++	struct timens_offset *offset = __vdso_offset(vc);
+ 	struct timens_offset monotonic = offset_from_ts(ns->offsets.monotonic);
+ 	struct timens_offset boottime = offset_from_ts(ns->offsets.boottime);
+ 
+@@ -236,14 +236,15 @@
+ 
+ 	ns->frozen_offsets = true;
+ 	vdata = page_address(ns->vvar_page);
+-	vc = vdata->clock_data;
++	vc = __vdso_clock_data(vdata);
+ 
+ 	for (i = 0; i < CS_BASES; i++)
+ 		timens_setup_vdso_clock_data(&vc[i], ns);
+ 
+ 	if (IS_ENABLED(CONFIG_POSIX_AUX_CLOCKS)) {
+-		for (i = 0; i < ARRAY_SIZE(vdata->aux_clock_data); i++)
+-			timens_setup_vdso_clock_data(&vdata->aux_clock_data[i], ns);
++		struct vdso_clock *avc = __vdso_aux_clock_data(vdata);
++		for (i = 0; i < vdata->nr_aux_clocks; i++)
++			timens_setup_vdso_clock_data(&avc[i], ns);
+ 	}
+ 
+ out:
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -87,17 +87,7 @@
+ #endif
+ };
+ 
+-static struct ntp_data tk_ntp_data[TIMEKEEPERS_MAX] = {
+-	[ 0 ... TIMEKEEPERS_MAX - 1 ] = {
+-		.tick_usec		= USER_TICK_USEC,
+-		.time_state		= TIME_OK,
+-		.time_status		= STA_UNSYNC,
+-		.time_constant		= 2,
+-		.time_maxerror		= NTP_PHASE_LIMIT,
+-		.time_esterror		= NTP_PHASE_LIMIT,
+-		.ntp_next_leap_sec	= TIME64_MAX,
+-	},
+-};
++static struct ntp_data *tk_ntp_data;
+ 
+ #define SECS_PER_DAY		86400
+ #define MAX_TICKADJ		500LL		/* usecs */
+@@ -1102,7 +1092,22 @@
+ 
+ void __init ntp_init(void)
+ {
+-	for (int id = 0; id < TIMEKEEPERS_MAX; id++)
+-		__ntp_clear(tk_ntp_data + id);
++	tk_ntp_data = kcalloc(TIMEKEEPERS_MAX, sizeof(*tk_ntp_data), GFP_KERNEL);
++	if (!tk_ntp_data)
++		panic("NTP: failed to allocate ntp data");
++
++	for (int id = 0; id < TIMEKEEPERS_MAX; id++) {
++		struct ntp_data *nd = &tk_ntp_data[id];
++
++		nd->tick_usec = USER_TICK_USEC;
++		nd->time_state = TIME_OK;
++		nd->time_status = STA_UNSYNC;
++		nd->time_constant = 2;
++		nd->time_maxerror = NTP_PHASE_LIMIT;
++		nd->time_esterror = NTP_PHASE_LIMIT;
++		nd->ntp_next_leap_sec = TIME64_MAX;
++
++		__ntp_clear(nd);
++	}
+ 	ntp_init_cmos_sync();
+ }
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -56,11 +56,14 @@
+ 	raw_spinlock_t		lock;
+ } ____cacheline_aligned;
+ 
+-static struct tk_data timekeeper_data[TIMEKEEPERS_MAX];
++static struct tk_data *timekeeper_data;
+ 
+-/* The core timekeeper */
++/* Convenience access to the core (index 0) */
+ #define tk_core		(timekeeper_data[TIMEKEEPER_CORE])
+ 
++/* Runtime count of auxiliary clocks, set during timekeeping_init() */
++static unsigned int nr_aux_clocks = KERNEL_MAX_AUX_CLOCKS;
++
+ #ifdef CONFIG_POSIX_AUX_CLOCKS
+ static inline bool tk_get_aux_ts64(unsigned int tkid, struct timespec64 *ts)
+ {
+@@ -69,7 +72,9 @@
+ 
+ static inline bool tk_is_aux(const struct timekeeper *tk)
+ {
+-	return tk->id >= TIMEKEEPER_AUX_FIRST && tk->id <= TIMEKEEPER_AUX_LAST;
++	unsigned int last = TIMEKEEPER_AUX_FIRST + nr_aux_clocks - 1;
++
++	return tk->id >= TIMEKEEPER_AUX_FIRST && tk->id <= last;
+ }
+ #else
+ static inline bool tk_get_aux_ts64(unsigned int tkid, struct timespec64 *ts)
+@@ -1801,12 +1806,27 @@
+ void __init timekeeping_init(void)
+ {
+ 	struct timespec64 wall_time, boot_offset, wall_to_mono;
+-	struct timekeeper *tks = &tk_core.shadow_timekeeper;
+ 	struct clocksource *clock;
++	struct timekeeper *tks;
++
++	/* Dynamically allocate timekeeper array for all clocks */
++	timekeeper_data = kcalloc(TIMEKEEPERS_MAX, sizeof(*timekeeper_data), GFP_KERNEL);
++	if (!timekeeper_data)
++		panic("timekeeping: failed to allocate timekeeper data");
+ 
+ 	tkd_basic_setup(&tk_core, TIMEKEEPER_CORE, true);
+ 	tk_aux_setup();
+ 
++	/* Dynamically allocate VDSO data page with variable clock support */
++	if (IS_ENABLED(CONFIG_GENERIC_GETTIMEOFDAY)) {
++		int ret = vdso_time_data_init(VDSO_BASES, nr_aux_clocks);
++
++		if (ret)
++			panic("timekeeping: failed to allocate VDSO data page");
++	}
++
++	tks = &tk_core.shadow_timekeeper;
++
+ 	read_persistent_wall_and_boot_offset(&wall_time, &boot_offset);
+ 	if (timespec64_valid_settod(&wall_time) &&
+ 	    timespec64_to_ns(&wall_time) > 0) {
+@@ -3083,10 +3103,15 @@
+ 	if (!auxo)
+ 		goto err_clean;
+ 
+-	for (int i = 0; i < MAX_AUX_CLOCKS; i++) {
+-		char id[2] = { [0] = '0' + i, };
+-		struct kobject *clk = kobject_create_and_add(id, auxo);
++	for (int i = 0; i < nr_aux_clocks; i++) {
++		char id[3] = { [0] = '0' + i / 10, [1] = '0' + i % 10, };
++		struct kobject *clk;
++
++		/* Skip leading zero for single-digit IDs */
++		if (i < 10)
++			id[1] = '\0';
+ 
++		clk = kobject_create_and_add(id, auxo);
+ 		if (!clk) {
+ 			ret = -ENOMEM;
+ 			goto err_clean;
+@@ -3107,7 +3132,14 @@
+ 
+ static __init void tk_aux_setup(void)
+ {
+-	for (int i = TIMEKEEPER_AUX_FIRST; i <= TIMEKEEPER_AUX_LAST; i++)
++	unsigned int last = TIMEKEEPER_AUX_FIRST + nr_aux_clocks - 1;
++
++	for (int i = TIMEKEEPER_AUX_FIRST; i <= last; i++)
+ 		tkd_basic_setup(&timekeeper_data[i], i, false);
+ }
++
++unsigned int timekeeping_nr_aux_clocks(void)
++{
++	return nr_aux_clocks;
++}
+ #endif /* CONFIG_POSIX_AUX_CLOCKS */
+--- a/kernel/time/vsyscall.c
++++ b/kernel/time/vsyscall.c
+@@ -28,7 +28,7 @@
+ 
+ static inline void update_vdso_time_data(struct vdso_time_data *vdata, struct timekeeper *tk)
+ {
+-	struct vdso_clock *vc = vdata->clock_data;
++	struct vdso_clock *vc = __vdso_clock_data(vdata);
+ 	struct vdso_timestamp *vdso_ts;
+ 	u64 nsec, sec;
+ 
+@@ -36,7 +36,7 @@
+ 	fill_clock_configuration(&vc[CS_RAW],		&tk->tkr_raw);
+ 
+ 	/* CLOCK_MONOTONIC */
+-	vdso_ts		= &vc[CS_HRES_COARSE].basetime[CLOCK_MONOTONIC];
++	vdso_ts		= &__vdso_basetime(&vc[CS_HRES_COARSE])[CLOCK_MONOTONIC];
+ 	vdso_ts->sec	= tk->xtime_sec + tk->wall_to_monotonic.tv_sec;
+ 
+ 	nsec = tk->tkr_mono.xtime_nsec;
+@@ -54,7 +54,7 @@
+ 	nsec	+= (u64)tk->monotonic_to_boot.tv_nsec << tk->tkr_mono.shift;
+ 
+ 	/* CLOCK_BOOTTIME */
+-	vdso_ts		= &vc[CS_HRES_COARSE].basetime[CLOCK_BOOTTIME];
++	vdso_ts		= &__vdso_basetime(&vc[CS_HRES_COARSE])[CLOCK_BOOTTIME];
+ 	vdso_ts->sec	= sec;
+ 
+ 	while (nsec >= (((u64)NSEC_PER_SEC) << tk->tkr_mono.shift)) {
+@@ -64,12 +64,12 @@
+ 	vdso_ts->nsec	= nsec;
+ 
+ 	/* CLOCK_MONOTONIC_RAW */
+-	vdso_ts		= &vc[CS_RAW].basetime[CLOCK_MONOTONIC_RAW];
++	vdso_ts		= &__vdso_basetime(&vc[CS_RAW])[CLOCK_MONOTONIC_RAW];
+ 	vdso_ts->sec	= tk->raw_sec;
+ 	vdso_ts->nsec	= tk->tkr_raw.xtime_nsec;
+ 
+ 	/* CLOCK_TAI */
+-	vdso_ts		= &vc[CS_HRES_COARSE].basetime[CLOCK_TAI];
++	vdso_ts		= &__vdso_basetime(&vc[CS_HRES_COARSE])[CLOCK_TAI];
+ 	vdso_ts->sec	= tk->xtime_sec + (s64)tk->tai_offset;
+ 	vdso_ts->nsec	= tk->tkr_mono.xtime_nsec;
+ }
+@@ -77,7 +77,7 @@
+ void update_vsyscall(struct timekeeper *tk)
+ {
+ 	struct vdso_time_data *vdata = vdso_k_time_data;
+-	struct vdso_clock *vc = vdata->clock_data;
++	struct vdso_clock *vc = __vdso_clock_data(vdata);
+ 	struct vdso_timestamp *vdso_ts;
+ 	s32 clock_mode;
+ 	u64 nsec;
+@@ -90,17 +90,17 @@
+ 	vc[CS_RAW].clock_mode		= clock_mode;
+ 
+ 	/* CLOCK_REALTIME also required for time() */
+-	vdso_ts		= &vc[CS_HRES_COARSE].basetime[CLOCK_REALTIME];
++	vdso_ts		= &__vdso_basetime(&vc[CS_HRES_COARSE])[CLOCK_REALTIME];
+ 	vdso_ts->sec	= tk->xtime_sec;
+ 	vdso_ts->nsec	= tk->tkr_mono.xtime_nsec;
+ 
+ 	/* CLOCK_REALTIME_COARSE */
+-	vdso_ts		= &vc[CS_HRES_COARSE].basetime[CLOCK_REALTIME_COARSE];
++	vdso_ts		= &__vdso_basetime(&vc[CS_HRES_COARSE])[CLOCK_REALTIME_COARSE];
+ 	vdso_ts->sec	= tk->xtime_sec;
+ 	vdso_ts->nsec	= tk->coarse_nsec;
+ 
+ 	/* CLOCK_MONOTONIC_COARSE */
+-	vdso_ts		= &vc[CS_HRES_COARSE].basetime[CLOCK_MONOTONIC_COARSE];
++	vdso_ts		= &__vdso_basetime(&vc[CS_HRES_COARSE])[CLOCK_MONOTONIC_COARSE];
+ 	vdso_ts->sec	= tk->xtime_sec + tk->wall_to_monotonic.tv_sec;
+ 	nsec		= tk->coarse_nsec;
+ 	nsec		= nsec + tk->wall_to_monotonic.tv_nsec;
+@@ -145,8 +145,8 @@
+ 	s32 clock_mode;
+ 	u64 nsec;
+ 
+-	vc = &vdata->aux_clock_data[tk->id - TIMEKEEPER_AUX_FIRST];
+-	vdso_ts = &vc->basetime[VDSO_BASE_AUX];
++	vc = &__vdso_aux_clock_data(vdata)[tk->id - TIMEKEEPER_AUX_FIRST];
++	vdso_ts = &__vdso_basetime(vc)[VDSO_BASE_AUX];
+ 	clock_mode = tk->tkr_mono.clock->vdso_clock_mode;
+ 	if (!tk->clock_valid)
+ 		clock_mode = VDSO_CLOCKMODE_NONE;
+--- a/lib/vdso/datastore.c
++++ b/lib/vdso/datastore.c
+@@ -3,21 +3,70 @@
+ #include <linux/linkage.h>
+ #include <linux/mmap_lock.h>
+ #include <linux/mm.h>
++#include <linux/slab.h>
+ #include <linux/time_namespace.h>
+ #include <linux/types.h>
+ #include <linux/vdso_datastore.h>
+ #include <vdso/datapage.h>
+ 
+ /*
+- * The vDSO data page.
++ * The vDSO data page - dynamically allocated to accommodate variable clock
++ * counts. The layout is:
++ *
++ *   struct vdso_time_data (header with offsets)
++ *   struct vdso_clock clock_data[CS_BASES] (2 entries)
++ *     For each: struct vdso_timestamp basetime[nr_clock_ids]
++ *   struct vdso_clock aux_clock_data[nr_aux_clocks]
++ *     For each: struct vdso_timestamp basetime[nr_clock_ids]
+  */
+ #ifdef CONFIG_GENERIC_GETTIMEOFDAY
+-static union {
+-	struct vdso_time_data	data;
+-	u8			page[PAGE_SIZE];
+-} vdso_time_data_store __page_aligned_data;
+-struct vdso_time_data *vdso_k_time_data = &vdso_time_data_store.data;
+-static_assert(sizeof(vdso_time_data_store) == PAGE_SIZE);
++static struct vdso_time_data *vdso_time_data_store;
++struct vdso_time_data *vdso_k_time_data;
++
++/*
++ * vdso_time_data_init - Allocate and initialize the VDSO time data page
++ * @nr_clock_ids:	Number of clock IDs per clock
++ * @nr_aux:		Number of auxiliary clocks
++ *
++ * Must be called once during boot (from timekeeping_init()) before any VDSO
++ * lookups occur.
++ *
++ * The allocation uses alloc_pages_exact() to obtain physically contiguous,
++ * page-aligned memory suitable for mapping into userspace via the vvar
++ * fault handler.
++ */
++int __init vdso_time_data_init(unsigned int nr_clock_ids, unsigned int nr_aux)
++{
++	struct vdso_time_data *vd;
++	size_t total;
++	u32 clock_off, aux_off;
++
++	total = vdso_time_data_total_size(nr_clock_ids, nr_aux);
++	total = PAGE_ALIGN(total);
++
++	vd = alloc_pages_exact(total, GFP_KERNEL | __GFP_ZERO);
++	if (!vd)
++		return -ENOMEM;
++
++	vd->nr_clock_ids = nr_clock_ids;
++	vd->nr_aux_clocks = nr_aux;
++
++	/* clock_data starts immediately after the vdso_time_data header */
++	clock_off = sizeof(struct vdso_time_data);
++	vd->clock_data_off = clock_off;
++
++	/* aux_clock_data starts after clock_data array */
++	aux_off = clock_off + vdso_clock_data_size(CS_BASES, nr_clock_ids);
++	vd->aux_clock_data_off = aux_off;
++
++	vdso_k_time_data = vd;
++
++	pr_debug("VDSO time data: %zu bytes, %u clock IDs, %u aux clocks\n",
++		 total, nr_clock_ids, nr_aux);
++	return 0;
++}
++#else
++struct vdso_time_data *vdso_k_time_data;
+ #endif /* CONFIG_GENERIC_GETTIMEOFDAY */
+ 
+ #ifdef CONFIG_VDSO_GETRANDOM
+@@ -37,6 +86,11 @@
+ struct vdso_arch_data *vdso_k_arch_data = &vdso_arch_data_store.data;
+ #endif /* CONFIG_ARCH_HAS_VDSO_ARCH_DATA */
+ 
++static inline unsigned long vdso_time_data_pfn(void)
++{
++	return page_to_pfn(virt_to_page(vdso_k_time_data));
++}
++
+ static vm_fault_t vvar_fault(const struct vm_special_mapping *sm,
+ 			     struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+@@ -48,7 +102,7 @@
+ 	case VDSO_TIME_PAGE_OFFSET:
+ 		if (!IS_ENABLED(CONFIG_GENERIC_GETTIMEOFDAY))
+ 			return VM_FAULT_SIGBUS;
+-		pfn = __phys_to_pfn(__pa_symbol(vdso_k_time_data));
++		pfn = vdso_time_data_pfn();
+ 		if (timens_page) {
+ 			/*
+ 			 * Fault in VVAR page too, since it will be accessed
+@@ -71,7 +125,7 @@
+ 		 */
+ 		if (!IS_ENABLED(CONFIG_TIME_NS) || !timens_page)
+ 			return VM_FAULT_SIGBUS;
+-		pfn = __phys_to_pfn(__pa_symbol(vdso_k_time_data));
++		pfn = vdso_time_data_pfn();
+ 		break;
+ 	case VDSO_RNG_PAGE_OFFSET:
+ 		if (!IS_ENABLED(CONFIG_VDSO_GETRANDOM))
+--- a/lib/vdso/gettimeofday.c
++++ b/lib/vdso/gettimeofday.c
+@@ -92,7 +92,7 @@
+ bool vdso_get_timestamp(const struct vdso_time_data *vd, const struct vdso_clock *vc,
+ 			unsigned int clkidx, u64 *sec, u64 *ns)
+ {
+-	const struct vdso_timestamp *vdso_ts = &vc->basetime[clkidx];
++	const struct vdso_timestamp *vdso_ts = &__vdso_basetime(vc)[clkidx];
+ 	u64 cycles;
+ 
+ 	if (unlikely(!vdso_clocksource_ok(vc)))
+@@ -119,8 +119,8 @@
+ 		    clockid_t clk, struct __kernel_timespec *ts)
+ {
+ 	const struct vdso_time_data *vd = __arch_get_vdso_u_timens_data(vdns);
+-	const struct timens_offset *offs = &vcns->offset[clk];
+-	const struct vdso_clock *vc = vd->clock_data;
++	const struct timens_offset *offs = &__vdso_offset(vcns)[clk];
++	const struct vdso_clock *vc = __vdso_clock_data(vd);
+ 	u32 seq;
+ 	s64 sec;
+ 	u64 ns;
+@@ -191,14 +191,14 @@
+ 		      clockid_t clk, struct __kernel_timespec *ts)
+ {
+ 	const struct vdso_time_data *vd = __arch_get_vdso_u_timens_data(vdns);
+-	const struct timens_offset *offs = &vcns->offset[clk];
+-	const struct vdso_clock *vc = vd->clock_data;
++	const struct timens_offset *offs = &__vdso_offset(vcns)[clk];
++	const struct vdso_clock *vc = __vdso_clock_data(vd);
+ 	const struct vdso_timestamp *vdso_ts;
+ 	u64 nsec;
+ 	s64 sec;
+ 	s32 seq;
+ 
+-	vdso_ts = &vc->basetime[clk];
++	vdso_ts = &__vdso_basetime(vc)[clk];
+ 
+ 	do {
+ 		seq = vdso_read_begin(vc);
+@@ -219,7 +219,7 @@
+ bool do_coarse(const struct vdso_time_data *vd, const struct vdso_clock *vc,
+ 	       clockid_t clk, struct __kernel_timespec *ts)
+ {
+-	const struct vdso_timestamp *vdso_ts = &vc->basetime[clk];
++	const struct vdso_timestamp *vdso_ts = &__vdso_basetime(vc)[clk];
+ 	u32 seq;
+ 
+ 	do {
+@@ -253,7 +253,7 @@
+ 		return false;
+ 
+ 	idx = clock - CLOCK_AUX;
+-	vc = &vd->aux_clock_data[idx];
++	vc = &__vdso_aux_clock_data(vd)[idx];
+ 
+ 	do {
+ 		/*
+@@ -263,7 +263,7 @@
+ 		while ((seq = READ_ONCE(vc->seq)) & 1) {
+ 			if (IS_ENABLED(CONFIG_TIME_NS) && vc->clock_mode == VDSO_CLOCKMODE_TIMENS) {
+ 				vd = __arch_get_vdso_u_timens_data(vd);
+-				vc = &vd->aux_clock_data[idx];
++				vc = &__vdso_aux_clock_data(vd)[idx];
+ 				/* Re-read from the real time data page */
+ 				continue;
+ 			}
+@@ -288,7 +288,7 @@
+ __cvdso_clock_gettime_common(const struct vdso_time_data *vd, clockid_t clock,
+ 			     struct __kernel_timespec *ts)
+ {
+-	const struct vdso_clock *vc = vd->clock_data;
++	const struct vdso_clock *vc = __vdso_clock_data(vd);
+ 	u32 msk;
+ 
+ 	if (!vdso_clockid_valid(clock))
+@@ -363,7 +363,7 @@
+ __cvdso_gettimeofday_data(const struct vdso_time_data *vd,
+ 			  struct __kernel_old_timeval *tv, struct timezone *tz)
+ {
+-	const struct vdso_clock *vc = vd->clock_data;
++	const struct vdso_clock *vc = __vdso_clock_data(vd);
+ 
+ 	if (likely(tv != NULL)) {
+ 		struct __kernel_timespec ts;
+@@ -397,16 +397,16 @@
+ static __maybe_unused __kernel_old_time_t
+ __cvdso_time_data(const struct vdso_time_data *vd, __kernel_old_time_t *time)
+ {
+-	const struct vdso_clock *vc = vd->clock_data;
++	const struct vdso_clock *vc = __vdso_clock_data(vd);
+ 	__kernel_old_time_t t;
+ 
+ 	if (IS_ENABLED(CONFIG_TIME_NS) &&
+ 	    vc->clock_mode == VDSO_CLOCKMODE_TIMENS) {
+ 		vd = __arch_get_vdso_u_timens_data(vd);
+-		vc = vd->clock_data;
++		vc = __vdso_clock_data(vd);
+ 	}
+ 
+-	t = READ_ONCE(vc[CS_HRES_COARSE].basetime[CLOCK_REALTIME].sec);
++	t = READ_ONCE(__vdso_basetime(&vc[CS_HRES_COARSE])[CLOCK_REALTIME].sec);
+ 
+ 	if (time)
+ 		*time = t;
+@@ -425,7 +425,7 @@
+ bool __cvdso_clock_getres_common(const struct vdso_time_data *vd, clockid_t clock,
+ 				 struct __kernel_timespec *res)
+ {
+-	const struct vdso_clock *vc = vd->clock_data;
++	const struct vdso_clock *vc = __vdso_clock_data(vd);
+ 	u32 msk;
+ 	u64 ns;
+ 

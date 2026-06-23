@@ -1,0 +1,64 @@
+{
+  "task_id": "000069_d1c7dc57ff24",
+  "subject": "drm/atomic-helper: Export and namespace some functions",
+  "commit": "d1c7dc57ff2400b141e6582a8d2dc5170108cf81",
+  "description": "Export and rename internal atomic helper functions to make them available as public API for other display drivers, enabling proper atomic commit helper usage.",
+  "mcp": {
+    "elapsed": 589.2,
+    "has_diff": true,
+    "tokens": {
+      "input_tokens": 72295,
+      "output_tokens": 13822,
+      "reasoning_tokens": 6845,
+      "cache_write": 0,
+      "cache_read": 4171776,
+      "total_tokens": 92962,
+      "cost": 0.0
+    },
+    "diff_size": 6695,
+    "trajectory_size": 471631
+  },
+  "baseline": {
+    "elapsed": 476.8,
+    "has_diff": true,
+    "tokens": {
+      "input_tokens": 53267,
+      "output_tokens": 14169,
+      "reasoning_tokens": 6433,
+      "cache_write": 0,
+      "cache_read": 3066624,
+      "total_tokens": 73869,
+      "cost": 0.0
+    },
+    "diff_size": 10518,
+    "trajectory_size": 396757
+  },
+  "verdict": {
+    "ranking": [
+      "expected",
+      "B",
+      "A"
+    ],
+    "best_match": "B",
+    "scores": {
+      "expected": {
+        "correctness": 10,
+        "completeness": 10,
+        "quality": 10,
+        "total": 30
+      },
+      "A": {
+        "correctness": 2,
+        "completeness": 2,
+        "quality": 4,
+        "total": 8
+      },
+      "B": {
+        "correctness": 5,
+        "completeness": 6,
+        "quality": 6,
+        "total": 17
+      }
+    }
+  }
+}

@@ -1,0 +1,53 @@
+--- a/net/netfilter/nf_synproxy_core.c
++++ b/net/netfilter/nf_synproxy_core.c
+@@ -190,7 +190,7 @@
+ 	unsigned int optoff, optend;
+ 	__be32 *ptr, old;
+ 
+-	if (synproxy->tsoff == 0)
++	if (READ_ONCE(synproxy->tsoff) == 0)
+ 		return 1;
+ 
+ 	optoff = protoff + sizeof(struct tcphdr);
+@@ -219,12 +219,12 @@
+ 					ptr = (__be32 *)&op[2];
+ 					old = *ptr;
+ 					*ptr = htonl(ntohl(*ptr) -
+-						     synproxy->tsoff);
++						     READ_ONCE(synproxy->tsoff));
+ 				} else {
+ 					ptr = (__be32 *)&op[6];
+ 					old = *ptr;
+ 					*ptr = htonl(ntohl(*ptr) +
+-						     synproxy->tsoff);
++						     READ_ONCE(synproxy->tsoff));
+ 				}
+ 				inet_proto_csum_replace4(&th->check, skb,
+ 							 old, *ptr, false);
+@@ -670,7 +670,7 @@
+ 	switch (state->state) {
+ 	case TCP_CONNTRACK_CLOSE:
+ 		if (th->rst && CTINFO2DIR(ctinfo) != IP_CT_DIR_ORIGINAL) {
+-			nf_ct_seqadj_init(ct, ctinfo, synproxy->isn -
++			nf_ct_seqadj_init(ct, ctinfo, READ_ONCE(synproxy->isn) -
+ 						      ntohl(th->seq) + 1);
+ 			break;
+ 		}
+@@ -1093,7 +1093,7 @@
+ 	switch (state->state) {
+ 	case TCP_CONNTRACK_CLOSE:
+ 		if (th->rst && CTINFO2DIR(ctinfo) != IP_CT_DIR_ORIGINAL) {
+-			nf_ct_seqadj_init(ct, ctinfo, synproxy->isn -
++			nf_ct_seqadj_init(ct, ctinfo, READ_ONCE(synproxy->isn) -
+ 						      ntohl(th->seq) + 1);
+ 			break;
+ 		}
+@@ -1107,7 +1107,7 @@
+ 		 * reestablished.
+ 		 */
+ 		nf_ct_seqadj_init(ct, ctinfo, 0);
+-		synproxy->tsoff = 0;
++		WRITE_ONCE(synproxy->tsoff, 0);
+ 		this_cpu_inc(snet->stats->conn_reopened);
+ 		fallthrough;
+ 	case TCP_CONNTRACK_SYN_SENT:

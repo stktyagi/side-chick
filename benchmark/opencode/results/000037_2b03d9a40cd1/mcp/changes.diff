@@ -1,0 +1,38 @@
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -1994,6 +1994,25 @@
+ 	  Say yes here to enable a driver for GPIO multiplexers based on latches
+ 	  connected to other GPIOs.
+ 
++config GPIO_VIRTMUX
++	tristate "Virtual GPIO multiplexer driver"
++	select MULTIPLEXER
++	help
++	  Say yes here to enable the virtual GPIO multiplexer driver.
++
++	  This driver provides a 1-to-many mapping between virtual GPIOs and
++	  a single real GPIO using a mux controller. Each virtual GPIO
++	  corresponds to a mux channel. When a virtual GPIO is accessed, the
++	  driver selects the appropriate mux channel, operates on the real
++	  GPIO, then deselects the mux.
++
++	  This is useful when you have more signals than GPIOs and use an
++	  external multiplexer to share one GPIO among multiple inputs or
++	  outputs.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called gpio-virtmux.
++
+ config GPIO_MOCKUP
+ 	tristate "GPIO Testing Driver (DEPRECATED)"
+ 	select IRQ_SIM
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -202,6 +202,7 @@
+ obj-$(CONFIG_GPIO_VIPERBOARD)		+= gpio-viperboard.o
+ obj-$(CONFIG_GPIO_VIRTUSER)		+= gpio-virtuser.o
+ obj-$(CONFIG_GPIO_VIRTIO)		+= gpio-virtio.o
++obj-$(CONFIG_GPIO_VIRTMUX)		+= gpio-virtmux.o
+ obj-$(CONFIG_GPIO_VISCONTI)		+= gpio-visconti.o
+ obj-$(CONFIG_GPIO_VX855)		+= gpio-vx855.o
+ obj-$(CONFIG_GPIO_WCD934X)		+= gpio-wcd934x.o

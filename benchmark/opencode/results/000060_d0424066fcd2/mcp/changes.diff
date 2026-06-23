@@ -1,0 +1,53 @@
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -221,6 +221,7 @@
+ 	size_t salen = sizeof(address);
+ 	char *fo_path;
+ 	struct net *net = netns(file);
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 
+ 	/* sanity check */
+ 	if (size == 0)
+@@ -229,6 +230,9 @@
+ 	if (buf[size-1] != '\n')
+ 		return -EINVAL;
+ 
++	if (!nn->nfsd_net_up)
++		return -ENODEV;
++
+ 	fo_path = buf;
+ 	if (qword_get(&buf, fo_path, size) < 0)
+ 		return -EINVAL;
+@@ -259,6 +263,8 @@
+ 	struct path path;
+ 	char *fo_path;
+ 	int error;
++	struct net *net = netns(file);
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 
+ 	/* sanity check */
+ 	if (size == 0)
+@@ -267,10 +273,13 @@
+ 	if (buf[size-1] != '\n')
+ 		return -EINVAL;
+ 
++	if (!nn->nfsd_net_up)
++		return -ENODEV;
++
+ 	fo_path = buf;
+ 	if (qword_get(&buf, fo_path, size) < 0)
+ 		return -EINVAL;
+-	trace_nfsd_ctl_unlock_fs(netns(file), fo_path);
++	trace_nfsd_ctl_unlock_fs(net, fo_path);
+ 	error = kern_path(fo_path, 0, &path);
+ 	if (error)
+ 		return error;
+@@ -285,7 +294,7 @@
+ 	 * 3.  Is that directory the root of an exported file system?
+ 	 */
+ 	error = nlmsvc_unlock_all_by_sb(path.dentry->d_sb);
+-	nfsd4_revoke_states(netns(file), path.dentry->d_sb);
++	nfsd4_revoke_states(net, path.dentry->d_sb);
+ 
+ 	path_put(&path);
+ 	return error;

@@ -1,0 +1,482 @@
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -101,6 +101,7 @@
+ 	u32 len;			/* Descriptor length. */
+ 	u16 flags;			/* Descriptor flags. */
+ 	u16 next;			/* The next desc state in a list. */
++	unsigned long attrs;		/* DMA attributes for mapping. */
+ };
+ 
+ struct vring_virtqueue_split {
+@@ -174,7 +175,8 @@
+ 	int (*add)(struct vring_virtqueue *vq, struct scatterlist *sgs[],
+ 		   unsigned int total_sg, unsigned int out_sgs,
+ 		   unsigned int in_sgs,	void *data,
+-		   void *ctx, bool premapped, gfp_t gfp);
++		   void *ctx, bool premapped, gfp_t gfp,
++		   unsigned long attrs);
+ 	void *(*get)(struct vring_virtqueue *vq, unsigned int *len, void **ctx);
+ 	bool (*kick_prepare)(struct vring_virtqueue *vq);
+ 	void (*disable_cb)(struct vring_virtqueue *vq);
+@@ -444,7 +446,7 @@
+ /* Map one sg entry. */
+ static int vring_map_one_sg(const struct vring_virtqueue *vq, struct scatterlist *sg,
+ 			    enum dma_data_direction direction, dma_addr_t *addr,
+-			    u32 *len, bool premapped)
++			    u32 *len, bool premapped, unsigned long attrs)
+ {
+ 	if (premapped) {
+ 		*addr = sg_dma_address(sg);
+@@ -472,7 +474,7 @@
+ 	 */
+ 	*addr = virtqueue_map_page_attrs(&vq->vq, sg_page(sg),
+ 					 sg->offset, sg->length,
+-					 direction, 0);
++					 direction, attrs);
+ 
+ 	if (vring_mapping_error(vq, *addr))
+ 		return -ENOMEM;
+@@ -534,7 +536,7 @@
+ 				   extra->len,
+ 				   (flags & VRING_DESC_F_WRITE) ?
+ 				   DMA_FROM_DEVICE : DMA_TO_DEVICE,
+-				   0);
++				   extra->attrs);
+ 
+ out:
+ 	return extra->next;
+@@ -575,7 +577,8 @@
+ 						    unsigned int i,
+ 						    dma_addr_t addr,
+ 						    unsigned int len,
+-						    u16 flags, bool premapped)
++						    u16 flags, bool premapped,
++						    unsigned long attrs)
+ {
+ 	struct virtio_device *vdev = vq->vq.vdev;
+ 	u16 next;
+@@ -587,6 +590,7 @@
+ 	extra[i].addr = premapped ? DMA_MAPPING_ERROR : addr;
+ 	extra[i].len = len;
+ 	extra[i].flags = flags;
++	extra[i].attrs = attrs;
+ 
+ 	next = extra[i].next;
+ 
+@@ -603,7 +607,8 @@
+ 				      void *data,
+ 				      void *ctx,
+ 				      bool premapped,
+-				      gfp_t gfp)
++				      gfp_t gfp,
++				      unsigned long attrs)
+ {
+ 	struct vring_desc_extra *extra;
+ 	struct scatterlist *sg;
+@@ -675,14 +680,14 @@
+ 			if (++sg_count != total_sg)
+ 				flags |= VRING_DESC_F_NEXT;
+ 
+-			if (vring_map_one_sg(vq, sg, DMA_TO_DEVICE, &addr, &len, premapped))
++			if (vring_map_one_sg(vq, sg, DMA_TO_DEVICE, &addr, &len, premapped, attrs))
+ 				goto unmap_release;
+ 
+ 			/* Note that we trust indirect descriptor
+ 			 * table since it use stream DMA mapping.
+ 			 */
+ 			i = virtqueue_add_desc_split(vq, desc, extra, i, addr,
+-						     len, flags, premapped);
++						     len, flags, premapped, attrs);
+ 		}
+ 	}
+ 	for (; n < (out_sgs + in_sgs); n++) {
+@@ -694,14 +699,14 @@
+ 			if (++sg_count != total_sg)
+ 				flags |= VRING_DESC_F_NEXT;
+ 
+-			if (vring_map_one_sg(vq, sg, DMA_FROM_DEVICE, &addr, &len, premapped))
++			if (vring_map_one_sg(vq, sg, DMA_FROM_DEVICE, &addr, &len, premapped, attrs))
+ 				goto unmap_release;
+ 
+ 			/* Note that we trust indirect descriptor
+ 			 * table since it use stream DMA mapping.
+ 			 */
+ 			i = virtqueue_add_desc_split(vq, desc, extra, i, addr,
+-						     len, flags, premapped);
++						     len, flags, premapped, attrs);
+ 			total_in_len += len;
+ 		}
+ 	}
+@@ -718,7 +723,7 @@
+ 					 vq->split.desc_extra,
+ 					 head, addr,
+ 					 total_sg * sizeof(struct vring_desc),
+-					 VRING_DESC_F_INDIRECT, false);
++					 VRING_DESC_F_INDIRECT, false, 0);
+ 	}
+ 
+ 	/* We're using some buffers from the free list. */
+@@ -1448,7 +1453,7 @@
+ 				   extra->addr, extra->len,
+ 				   (flags & VRING_DESC_F_WRITE) ?
+ 				   DMA_FROM_DEVICE : DMA_TO_DEVICE,
+-				   0);
++				   extra->attrs);
+ }
+ 
+ static struct vring_packed_desc *alloc_indirect_packed(unsigned int total_sg,
+@@ -1487,7 +1492,8 @@
+ 					 void *data,
+ 					 bool premapped,
+ 					 gfp_t gfp,
+-					 u16 id)
++					 u16 id,
++					 unsigned long attrs)
+ {
+ 	struct vring_desc_extra *extra;
+ 	struct vring_packed_desc *desc;
+@@ -1516,7 +1522,7 @@
+ 		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
+ 			if (vring_map_one_sg(vq, sg, n < out_sgs ?
+ 					     DMA_TO_DEVICE : DMA_FROM_DEVICE,
+-					     &addr, &len, premapped))
++					     &addr, &len, premapped, attrs))
+ 				goto unmap_release;
+ 
+ 			desc[i].flags = cpu_to_le16(n < out_sgs ?
+@@ -1528,6 +1534,7 @@
+ 				extra[i].addr = premapped ? DMA_MAPPING_ERROR : addr;
+ 				extra[i].len = len;
+ 				extra[i].flags = n < out_sgs ?  0 : VRING_DESC_F_WRITE;
++				extra[i].attrs = attrs;
+ 			}
+ 
+ 			if (n >= out_sgs)
+@@ -1615,7 +1622,8 @@
+ 				       void *data,
+ 				       void *ctx,
+ 				       bool premapped,
+-				       gfp_t gfp)
++				       gfp_t gfp,
++				       unsigned long attrs)
+ {
+ 	struct vring_packed_desc *desc;
+ 	struct scatterlist *sg;
+@@ -1643,7 +1651,7 @@
+ 		BUG_ON(id == vq->packed.vring.num);
+ 		err = virtqueue_add_indirect_packed(vq, sgs, total_sg, out_sgs,
+ 						    in_sgs, data, premapped,
+-						    gfp, id);
++						    gfp, id, attrs);
+ 		if (err != -ENOMEM) {
+ 			END_USE(vq);
+ 			return err;
+@@ -1679,7 +1687,7 @@
+ 
+ 			if (vring_map_one_sg(vq, sg, n < out_sgs ?
+ 					     DMA_TO_DEVICE : DMA_FROM_DEVICE,
+-					     &addr, &len, premapped))
++					     &addr, &len, premapped, attrs))
+ 				goto unmap_release;
+ 
+ 			flags = cpu_to_le16(vq->packed.avail_used_flags |
+@@ -1700,6 +1708,7 @@
+ 				vq->packed.desc_extra[curr].len = len;
+ 				vq->packed.desc_extra[curr].flags =
+ 					le16_to_cpu(flags);
++				vq->packed.desc_extra[curr].attrs = attrs;
+ 			}
+ 			prev = curr;
+ 			curr = vq->packed.desc_extra[curr].next;
+@@ -1772,7 +1781,8 @@
+ 						void *data,
+ 						void *ctx,
+ 						bool premapped,
+-						gfp_t gfp)
++						gfp_t gfp,
++						unsigned long attrs)
+ {
+ 	struct vring_packed_desc *desc;
+ 	struct scatterlist *sg;
+@@ -1799,7 +1809,7 @@
+ 	if (virtqueue_use_indirect(vq, total_sg)) {
+ 		err = virtqueue_add_indirect_packed(vq, sgs, total_sg, out_sgs,
+ 						    in_sgs, data, premapped, gfp,
+-						    vq->packed.next_avail_idx);
++						    vq->packed.next_avail_idx, attrs);
+ 		if (err != -ENOMEM) {
+ 			END_USE(vq);
+ 			return err;
+@@ -1838,7 +1848,7 @@
+ 
+ 			if (vring_map_one_sg(vq, sg, n < out_sgs ?
+ 					     DMA_TO_DEVICE : DMA_FROM_DEVICE,
+-					     &addr, &len, premapped))
++					     &addr, &len, premapped, attrs))
+ 				goto unmap_release;
+ 
+ 			flags |= cpu_to_le16(vq->packed.avail_used_flags);
+@@ -1858,6 +1868,7 @@
+ 				vq->packed.desc_extra[i].len = len;
+ 				vq->packed.desc_extra[i].flags =
+ 					le16_to_cpu(flags);
++				vq->packed.desc_extra[i].attrs = attrs;
+ 			}
+ 
+ 			if ((unlikely(++i >= vq->packed.vring.num))) {
+@@ -2781,13 +2792,14 @@
+ 				void *data,
+ 				void *ctx,
+ 				bool premapped,
+-				gfp_t gfp)
++				gfp_t gfp,
++				unsigned long attrs)
+ {
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
+ 
+ 	return VIRTQUEUE_CALL(vq, add, sgs, total_sg,
+ 			      out_sgs, in_sgs, data,
+-			      ctx, premapped, gfp);
++			      ctx, premapped, gfp, attrs);
+ }
+ 
+ /**
+@@ -2825,11 +2837,52 @@
+ 			total_sg++;
+ 	}
+ 	return virtqueue_add(_vq, sgs, total_sg, out_sgs, in_sgs,
+-			     data, NULL, false, gfp);
++			     data, NULL, false, gfp, 0);
+ }
+ EXPORT_SYMBOL_GPL(virtqueue_add_sgs);
+ 
+ /**
++ * virtqueue_add_sgs_attrs - expose buffers to other end with DMA attributes
++ * @_vq: the struct virtqueue we're talking about.
++ * @sgs: array of terminated scatterlists.
++ * @out_sgs: the number of scatterlists readable by other side
++ * @in_sgs: the number of scatterlists which are writable (after readable ones)
++ * @data: the token identifying the buffer.
++ * @gfp: how to do memory allocations (if necessary).
++ * @attrs: DMA attributes for mapping and unmapping buffers.
++ *
++ * Caller must ensure we don't call this with other virtqueue operations
++ * at the same time (except where noted).
++ *
++ * Returns zero or a negative error (ie. ENOSPC, ENOMEM, EIO).
++ *
++ * NB: ENOSPC is a special code that is only returned on an attempt to add a
++ * buffer to a full VQ. It indicates that some buffers are outstanding and that
++ * the operation can be retried after some buffers have been used.
++ */
++int virtqueue_add_sgs_attrs(struct virtqueue *_vq,
++			    struct scatterlist *sgs[],
++			    unsigned int out_sgs,
++			    unsigned int in_sgs,
++			    void *data,
++			    gfp_t gfp,
++			    unsigned long attrs)
++{
++	unsigned int i, total_sg = 0;
++
++	/* Count them first. */
++	for (i = 0; i < out_sgs + in_sgs; i++) {
++		struct scatterlist *sg;
++
++		for (sg = sgs[i]; sg; sg = sg_next(sg))
++			total_sg++;
++	}
++	return virtqueue_add(_vq, sgs, total_sg, out_sgs, in_sgs,
++			     data, NULL, false, gfp, attrs);
++}
++EXPORT_SYMBOL_GPL(virtqueue_add_sgs_attrs);
++
++/**
+  * virtqueue_add_outbuf - expose output buffers to other end
+  * @vq: the struct virtqueue we're talking about.
+  * @sg: scatterlist (must be well-formed and terminated!)
+@@ -2847,11 +2900,35 @@
+ 			 void *data,
+ 			 gfp_t gfp)
+ {
+-	return virtqueue_add(vq, &sg, num, 1, 0, data, NULL, false, gfp);
++	return virtqueue_add(vq, &sg, num, 1, 0, data, NULL, false, gfp, 0);
+ }
+ EXPORT_SYMBOL_GPL(virtqueue_add_outbuf);
+ 
+ /**
++ * virtqueue_add_outbuf_attrs - expose output buffers to other end with DMA attributes
++ * @vq: the struct virtqueue we're talking about.
++ * @sg: scatterlist (must be well-formed and terminated!)
++ * @num: the number of entries in @sg readable by other side
++ * @data: the token identifying the buffer.
++ * @gfp: how to do memory allocations (if necessary).
++ * @attrs: DMA attributes for mapping and unmapping buffers.
++ *
++ * Caller must ensure we don't call this with other virtqueue operations
++ * at the same time (except where noted).
++ *
++ * Returns zero or a negative error (ie. ENOSPC, ENOMEM, EIO).
++ */
++int virtqueue_add_outbuf_attrs(struct virtqueue *vq,
++			       struct scatterlist *sg, unsigned int num,
++			       void *data,
++			       gfp_t gfp,
++			       unsigned long attrs)
++{
++	return virtqueue_add(vq, &sg, num, 1, 0, data, NULL, false, gfp, attrs);
++}
++EXPORT_SYMBOL_GPL(virtqueue_add_outbuf_attrs);
++
++/**
+  * virtqueue_add_outbuf_premapped - expose output buffers to other end
+  * @vq: the struct virtqueue we're talking about.
+  * @sg: scatterlist (must be well-formed and terminated!)
+@@ -2870,7 +2947,7 @@
+ 				   void *data,
+ 				   gfp_t gfp)
+ {
+-	return virtqueue_add(vq, &sg, num, 1, 0, data, NULL, true, gfp);
++	return virtqueue_add(vq, &sg, num, 1, 0, data, NULL, true, gfp, 0);
+ }
+ EXPORT_SYMBOL_GPL(virtqueue_add_outbuf_premapped);
+ 
+@@ -2892,11 +2969,35 @@
+ 			void *data,
+ 			gfp_t gfp)
+ {
+-	return virtqueue_add(vq, &sg, num, 0, 1, data, NULL, false, gfp);
++	return virtqueue_add(vq, &sg, num, 0, 1, data, NULL, false, gfp, 0);
+ }
+ EXPORT_SYMBOL_GPL(virtqueue_add_inbuf);
+ 
+ /**
++ * virtqueue_add_inbuf_attrs - expose input buffers to other end with DMA attributes
++ * @vq: the struct virtqueue we're talking about.
++ * @sg: scatterlist (must be well-formed and terminated!)
++ * @num: the number of entries in @sg writable by other side
++ * @data: the token identifying the buffer.
++ * @gfp: how to do memory allocations (if necessary).
++ * @attrs: DMA attributes for mapping and unmapping buffers.
++ *
++ * Caller must ensure we don't call this with other virtqueue operations
++ * at the same time (except where noted).
++ *
++ * Returns zero or a negative error (ie. ENOSPC, ENOMEM, EIO).
++ */
++int virtqueue_add_inbuf_attrs(struct virtqueue *vq,
++			      struct scatterlist *sg, unsigned int num,
++			      void *data,
++			      gfp_t gfp,
++			      unsigned long attrs)
++{
++	return virtqueue_add(vq, &sg, num, 0, 1, data, NULL, false, gfp, attrs);
++}
++EXPORT_SYMBOL_GPL(virtqueue_add_inbuf_attrs);
++
++/**
+  * virtqueue_add_inbuf_ctx - expose input buffers to other end
+  * @vq: the struct virtqueue we're talking about.
+  * @sg: scatterlist (must be well-formed and terminated!)
+@@ -2916,11 +3017,37 @@
+ 			void *ctx,
+ 			gfp_t gfp)
+ {
+-	return virtqueue_add(vq, &sg, num, 0, 1, data, ctx, false, gfp);
++	return virtqueue_add(vq, &sg, num, 0, 1, data, ctx, false, gfp, 0);
+ }
+ EXPORT_SYMBOL_GPL(virtqueue_add_inbuf_ctx);
+ 
+ /**
++ * virtqueue_add_inbuf_ctx_attrs - expose input buffers to other end with DMA attributes
++ * @vq: the struct virtqueue we're talking about.
++ * @sg: scatterlist (must be well-formed and terminated!)
++ * @num: the number of entries in @sg writable by other side
++ * @data: the token identifying the buffer.
++ * @ctx: extra context for the token
++ * @gfp: how to do memory allocations (if necessary).
++ * @attrs: DMA attributes for mapping and unmapping buffers.
++ *
++ * Caller must ensure we don't call this with other virtqueue operations
++ * at the same time (except where noted).
++ *
++ * Returns zero or a negative error (ie. ENOSPC, ENOMEM, EIO).
++ */
++int virtqueue_add_inbuf_ctx_attrs(struct virtqueue *vq,
++				  struct scatterlist *sg, unsigned int num,
++				  void *data,
++				  void *ctx,
++				  gfp_t gfp,
++				  unsigned long attrs)
++{
++	return virtqueue_add(vq, &sg, num, 0, 1, data, ctx, false, gfp, attrs);
++}
++EXPORT_SYMBOL_GPL(virtqueue_add_inbuf_ctx_attrs);
++
++/**
+  * virtqueue_add_inbuf_premapped - expose input buffers to other end
+  * @vq: the struct virtqueue we're talking about.
+  * @sg: scatterlist (must be well-formed and terminated!)
+@@ -2941,7 +3068,7 @@
+ 				  void *ctx,
+ 				  gfp_t gfp)
+ {
+-	return virtqueue_add(vq, &sg, num, 0, 1, data, ctx, true, gfp);
++	return virtqueue_add(vq, &sg, num, 0, 1, data, ctx, true, gfp, 0);
+ }
+ EXPORT_SYMBOL_GPL(virtqueue_add_inbuf_premapped);
+ 
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -57,17 +57,36 @@
+ 			 void *data,
+ 			 gfp_t gfp);
+ 
++int virtqueue_add_outbuf_attrs(struct virtqueue *vq,
++			       struct scatterlist sg[], unsigned int num,
++			       void *data,
++			       gfp_t gfp,
++			       unsigned long attrs);
++
+ int virtqueue_add_inbuf(struct virtqueue *vq,
+ 			struct scatterlist sg[], unsigned int num,
+ 			void *data,
+ 			gfp_t gfp);
+ 
++int virtqueue_add_inbuf_attrs(struct virtqueue *vq,
++			      struct scatterlist sg[], unsigned int num,
++			      void *data,
++			      gfp_t gfp,
++			      unsigned long attrs);
++
+ int virtqueue_add_inbuf_ctx(struct virtqueue *vq,
+ 			    struct scatterlist sg[], unsigned int num,
+ 			    void *data,
+ 			    void *ctx,
+ 			    gfp_t gfp);
+ 
++int virtqueue_add_inbuf_ctx_attrs(struct virtqueue *vq,
++				  struct scatterlist sg[], unsigned int num,
++				  void *data,
++				  void *ctx,
++				  gfp_t gfp,
++				  unsigned long attrs);
++
+ int virtqueue_add_inbuf_premapped(struct virtqueue *vq,
+ 				  struct scatterlist *sg, unsigned int num,
+ 				  void *data,
+@@ -86,6 +105,14 @@
+ 		      void *data,
+ 		      gfp_t gfp);
+ 
++int virtqueue_add_sgs_attrs(struct virtqueue *vq,
++			    struct scatterlist *sgs[],
++			    unsigned int out_sgs,
++			    unsigned int in_sgs,
++			    void *data,
++			    gfp_t gfp,
++			    unsigned long attrs);
++
+ struct device *virtqueue_dma_dev(struct virtqueue *vq);
+ 
+ bool virtqueue_kick(struct virtqueue *vq);

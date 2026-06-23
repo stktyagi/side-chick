@@ -1,0 +1,10 @@
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -588,6 +588,7 @@
+ 		key_remove_domain(net->key_domain);
+ #endif
+ 		put_user_ns(user_ns);
++		ref_tracker_dir_exit(&net->refcnt_tracker);
+ 		net_passive_dec(net);
+ dec_ucounts:
+ 		dec_net_namespaces(ucounts);

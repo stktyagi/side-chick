@@ -1,0 +1,34 @@
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -113,6 +113,21 @@
+ 	  Enable support for the PCIe and USB 3 combo PHY and two
+ 	  PCIe-only PHYs used in the SpacemiT K1 SoC.
+ 
++config PHY_SPACEMIT_K1_USB2
++	tristate "SpacemiT K1 USB 2.0 PHY driver"
++	depends on ARCH_SPACEMIT || COMPILE_TEST
++	depends on HAS_IOMEM
++	depends on OF
++	depends on USB_SUPPORT
++	select GENERIC_PHY
++	select MFD_SYSCON
++	default ARCH_SPACEMIT
++	help
++	  Enable support for the USB 2.0 PHY present in the SpacemiT K1
++	  SoC. This PHY provides High-Speed, Full-Speed, and Low-Speed
++	  USB 2.0 connectivity and is typically paired with a Synopsys
++	  DWC3 USB controller.
++
+ source "drivers/phy/allwinner/Kconfig"
+ source "drivers/phy/amlogic/Kconfig"
+ source "drivers/phy/apple/Kconfig"
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -14,6 +14,7 @@
+ obj-$(CONFIG_PHY_AIROHA_PCIE)		+= phy-airoha-pcie.o
+ obj-$(CONFIG_PHY_NXP_PTN3222)		+= phy-nxp-ptn3222.o
+ obj-$(CONFIG_PHY_SPACEMIT_K1_PCIE)	+= phy-spacemit-k1-pcie.o
++obj-$(CONFIG_PHY_SPACEMIT_K1_USB2)	+= phy-spacemit-k1-usb2.o
+ obj-y					+= allwinner/	\
+ 					   amlogic/	\
+ 					   apple/	\

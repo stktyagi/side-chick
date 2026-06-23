@@ -1,0 +1,51 @@
+--- a/net/netfilter/ipset/ip_set_core.c
++++ b/net/netfilter/ipset/ip_set_core.c
+@@ -221,7 +221,7 @@
+ 			type->name, family_name(type->family),
+ 			type->revision_min);
+ 		ip_set_type_unlock();
+-		return -EINVAL;
++		return -EBUSY;
+ 	}
+ 	list_add_rcu(&type->list, &ip_set_type_list);
+ 	pr_debug("type %s, family %s, revision %u:%u registered.\n",
+--- a/net/netfilter/nf_log.c
++++ b/net/netfilter/nf_log.c
+@@ -89,7 +89,7 @@
+ 	if (pf == NFPROTO_UNSPEC) {
+ 		for (i = NFPROTO_UNSPEC; i < NFPROTO_NUMPROTO; i++) {
+ 			if (rcu_access_pointer(loggers[i][logger->type])) {
+-				ret = -EEXIST;
++				ret = -EBUSY;
+ 				goto unlock;
+ 			}
+ 		}
+@@ -97,7 +97,7 @@
+ 			rcu_assign_pointer(loggers[i][logger->type], logger);
+ 	} else {
+ 		if (rcu_access_pointer(loggers[pf][logger->type])) {
+-			ret = -EEXIST;
++			ret = -EBUSY;
+ 			goto unlock;
+ 		}
+ 		rcu_assign_pointer(loggers[pf][logger->type], logger);
+--- a/net/netfilter/x_tables.c
++++ b/net/netfilter/x_tables.c
+@@ -1470,7 +1470,7 @@
+ 	/* Don't autoload: we'd eat our tail... */
+ 	list_for_each_entry(t, &xt_net->tables[table->af], list) {
+ 		if (strcmp(t->name, table->name) == 0) {
+-			ret = -EEXIST;
++			ret = -EBUSY;
+ 			goto unlock;
+ 		}
+ 	}
+@@ -1764,7 +1764,7 @@
+ int xt_register_template(const struct xt_table *table,
+ 			 int (*table_init)(struct net *net))
+ {
+-	int ret = -EEXIST, af = table->af;
++	int ret = -EBUSY, af = table->af;
+ 	struct xt_template *t;
+ 
+ 	mutex_lock(&xt[af].mutex);

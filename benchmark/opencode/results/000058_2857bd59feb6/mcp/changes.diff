@@ -1,0 +1,44 @@
+--- a/fs/nfsd/netns.h
++++ b/fs/nfsd/netns.h
+@@ -66,6 +66,7 @@
+ 
+ 	struct lock_manager nfsd4_manager;
+ 	bool grace_ended;
++	spinlock_t nfsd4_grace_lock;	/* protects grace_ended and grace period end */
+ 	time64_t boot_time;
+ 
+ 	struct dentry *nfsd_client_dir;
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -6573,17 +6573,19 @@
+ void
+ nfsd4_end_grace(struct nfsd_net *nn)
+ {
+-	/* do nothing if grace period already ended */
+-	if (nn->grace_ended)
++	spin_lock(&nn->nfsd4_grace_lock);
++	if (nn->grace_ended) {
++		spin_unlock(&nn->nfsd4_grace_lock);
+ 		return;
++	}
++	nn->grace_ended = true;
++	spin_unlock(&nn->nfsd4_grace_lock);
+ 
+ 	trace_nfsd_grace_complete(nn);
+-	nn->grace_ended = true;
+ 	/*
+ 	 * If the server goes down again right now, an NFSv4
+ 	 * client will still be allowed to reclaim after it comes back up,
+ 	 * even if it hasn't yet had a chance to reclaim state this time.
+-	 *
+ 	 */
+ 	nfsd4_record_grace_done(nn);
+ 	/*
+@@ -8931,6 +8933,7 @@
+ 	nn->unconf_name_tree = RB_ROOT;
+ 	nn->boot_time = ktime_get_real_seconds();
+ 	nn->grace_ended = false;
++	spin_lock_init(&nn->nfsd4_grace_lock);
+ 	nn->nfsd4_manager.block_opens = true;
+ 	INIT_LIST_HEAD(&nn->nfsd4_manager.list);
+ 	INIT_LIST_HEAD(&nn->client_lru);

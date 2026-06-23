@@ -1,0 +1,32 @@
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -1994,6 +1994,19 @@
+ 	  Say yes here to enable a driver for GPIO multiplexers based on latches
+ 	  connected to other GPIOs.
+ 
++config GPIO_MUX
++	tristate "GPIO mux-controlled GPIO driver"
++	depends on MULTIPLEXER
++	help
++	  Say yes here to enable a GPIO driver that maps multiple virtual
++	  GPIOs to a single real GPIO line via a multiplexer controller.
++	  The mux is used to select which virtual line is active for GPIO
++	  operations.
++
++	  This driver is the complement to the GPIO-based mux controller
++	  (MUX_GPIO): instead of GPIOs controlling a mux, this driver
++	  uses a mux to control access to a shared GPIO line.
++
+ config GPIO_MOCKUP
+ 	tristate "GPIO Testing Driver (DEPRECATED)"
+ 	select IRQ_SIM
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -120,6 +120,7 @@
+ obj-$(CONFIG_GPIO_MLXBF2)		+= gpio-mlxbf2.o
+ obj-$(CONFIG_GPIO_MLXBF3)		+= gpio-mlxbf3.o
+ obj-$(CONFIG_GPIO_MM_LANTIQ)		+= gpio-mm-lantiq.o
++obj-$(CONFIG_GPIO_MUX)			+= gpio-mux.o
+ obj-$(CONFIG_GPIO_MOCKUP)		+= gpio-mockup.o
+ obj-$(CONFIG_GPIO_MOXTET)		+= gpio-moxtet.o
+ obj-$(CONFIG_GPIO_MPC5200)		+= gpio-mpc5200.o
