@@ -1,18 +1,18 @@
 import os
 
-from fastcontext.agent.agent import Agent
-from fastcontext.agent.llm import LLM
-from fastcontext.agent.tool.tool import ToolSet
+from aide.agent.agent import Agent
+from aide.agent.llm import LLM
+from aide.agent.tool.tool import ToolSet
 
-from fastcontext.agent.utils import load_system_prompt
+from aide.agent.utils import load_system_prompt
 
 
-def make_fastcontext_agent(
+def make_aide_agent(
     trajectory_file: str,
     work_dir: str,
     **kwargs,
 ) -> Agent:
-    name = "FastContext"
+    name = "Aide"
     system_prompt = kwargs.get("system_prompt", None)
     if system_prompt is None:
         system_prompt = load_system_prompt(work_dir)
@@ -31,9 +31,9 @@ def make_fastcontext_agent(
         max_tokens=max_tokens,
     )
 
-    from fastcontext.agent.tool.glob import GlobTool
-    from fastcontext.agent.tool.grep import GrepTool
-    from fastcontext.agent.tool.read import ReadTool
+    from aide.agent.tool.glob import GlobTool
+    from aide.agent.tool.grep import GrepTool
+    from aide.agent.tool.read import ReadTool
 
     tools = [GlobTool(), GrepTool(), ReadTool()]
 

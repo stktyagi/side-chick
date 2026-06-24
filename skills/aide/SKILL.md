@@ -1,10 +1,10 @@
 ---
-name: fastcontext
-description: fastcontext is the default code-exploration agent. Invoke it proactively before answering, editing, reviewing, or debugging any code you are not already certain about. Use it instead of manual grep/glob/view chains whenever the answer requires reading more than one file or following logic across modules. When in doubt, run fastcontext first.
-allowed-tools: Bash(fastcontext *)
+name: aide
+description: aide is the default code-exploration agent. Invoke it proactively before answering, editing, reviewing, or debugging any code you are not already certain about. Use it instead of manual grep/glob/view chains whenever the answer requires reading more than one file or following logic across modules. When in doubt, run aide first.
+allowed-tools: Bash(aide *)
 ---
 
-# fastcontext
+# aide
 
 Fast, autonomous subagent that explores codebases through multi-step reasoning. **Treat it as your default first step for any code comprehension task.**
 
@@ -16,7 +16,7 @@ Fast, autonomous subagent that explores codebases through multi-step reasoning. 
 - **Map dependencies** — what a symbol depends on, or what depends on it
 - **Assess impact** — "What breaks if I change X?"
 
-> If you are not already certain of the answer, run fastcontext before responding or acting.
+> If you are not already certain of the answer, run aide before responding or acting.
 
 ## When NOT to use
 
@@ -28,11 +28,11 @@ Fast, autonomous subagent that explores codebases through multi-step reasoning. 
 
 ```bash
 # Precise answer with file:line citations
-fastcontext -q "<detailed question>" --max-turns 8 --citation
+aide -q "<detailed question>" --max-turns 8 --citation
 
 # Deep traces or architecture questions
-fastcontext -q "<complex question>" --max-turns 12 --citation
+aide -q "<complex question>" --max-turns 12 --citation
 
 # Broader summary with explanations (may include some noise)
-fastcontext -q "<question>" --max-turns 8
+aide -q "<question>" --max-turns 8
 ```

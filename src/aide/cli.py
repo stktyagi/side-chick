@@ -3,15 +3,15 @@ import asyncio
 import os
 from datetime import datetime
 
-from fastcontext.agent.agent_factory import make_fastcontext_agent
-from fastcontext.agent.utils import load_dotenv
+from aide.agent.agent_factory import make_aide_agent
+from aide.agent.utils import load_dotenv
 
 
 def main():
-    """FastContext Command Line Interface"""
+    """Aide Command Line Interface"""
     load_dotenv()
     parser = argparse.ArgumentParser(
-        description="FastContext CLI",
+        description="Aide CLI",
     )
 
     parser.add_argument("--query", "-q", type=str, help="query to ask the agent")
@@ -20,7 +20,7 @@ def main():
         "-t",
         type=str,
         help="agent trajectory file",
-        default=f".fastcontext/trajectory_{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.jsonl",
+        default=f".aide/trajectory_{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.jsonl",
     )
     parser.add_argument("--max-turns", type=int, help="maximum number of turns (0 = unlimited)", default=int(os.getenv("MAX_TURNS", "4")))
     parser.add_argument("--verbose", action="store_true", help="whether to run in verbose mode")
@@ -37,13 +37,13 @@ def main():
     args = parser.parse_args()
 
     if args.command == "mcp":
-        from fastcontext.mcp_server import run_server
+        from aide.mcp_server import run_server
 
         run_server(host=args.host, port=args.port, work_dir=args.work_dir, verbose=args.verbose, transport=args.transport)
         return
 
     work_dir = os.getcwd()
-    agent = make_fastcontext_agent(trajectory_file=args.traj, work_dir=work_dir)
+    agent = make_aide_agent(trajectory_file=args.traj, work_dir=work_dir)
 
     prompt = args.query
     max_turns = args.max_turns if args.max_turns != 0 else None

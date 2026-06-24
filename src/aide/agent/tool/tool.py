@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from fastcontext.agent.llm import Message
+from aide.agent.llm import Message
 
 MAX_TOOLRUN_TIMEOUT = 10
 

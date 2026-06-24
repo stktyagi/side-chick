@@ -1,4 +1,4 @@
-# fastcontext deps (mirrors pyproject.toml)
+# aide deps (mirrors pyproject.toml)
 fastmcp>=2.6.0,<3.0.0
 openai>=1.0.0
 rich>=13.0.0

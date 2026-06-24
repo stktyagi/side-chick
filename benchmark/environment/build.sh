@@ -1,1 +1,1 @@
-docker build -t fastcontext-ubuntu24.04:latest .
+docker build -t aide-ubuntu24.04:latest .

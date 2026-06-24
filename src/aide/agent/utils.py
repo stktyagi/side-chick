@@ -73,13 +73,13 @@ def _load_env_file(path: Path) -> None:
 
 
 def load_dotenv() -> None:
-    """Load .env from FASTCONTEXT_ENV, then cwd/.env, then ~/.config/fastcontext/{.env,env}."""
-    explicit = os.getenv("FASTCONTEXT_ENV")
+    """Load .env from AIDE_ENV, then cwd/.env, then ~/.config/aide/{.env,env}."""
+    explicit = os.getenv("AIDE_ENV")
     if explicit:
         _load_env_file(Path(explicit))
         return
     _load_env_file(Path(".env"))
-    cfg_dir = Path.home() / ".config" / "fastcontext"
+    cfg_dir = Path.home() / ".config" / "aide"
     _load_env_file(cfg_dir / ".env")
     _load_env_file(cfg_dir / "env")
 

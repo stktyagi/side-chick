@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-bench_mini_swe_agent.py — End-to-end SWE-bench benchmark for mini-swe-agent + fastcontext.
+bench_mini_swe_agent.py — End-to-end SWE-bench benchmark for mini-swe-agent + aide.
 
-Runs mini-swe-agent (with fastcontext as a code search tool) on SWE-bench instances
+Runs mini-swe-agent (with aide as a code search tool) on SWE-bench instances
 inside Docker containers. Produces:
   1. Trajectories (mini-swe-agent native format) in the logs directory
   2. Patches (model_patch) in SWE-bench predictions format (preds.json)
@@ -47,7 +47,7 @@ DATASET_MAPPING = {
 WRITE_LOCK = threading.Lock()
 
 # Paths
-FASTCONTEXT_WHEEL = REPO_ROOT / "dist" / "fastcontext-0.1.0-py3-none-any.whl"
+AIDE_WHEEL = REPO_ROOT / "dist" / "aide-0.1.0-py3-none-any.whl"
 
 
 def resolve_repo_path(path: str | Path) -> Path:
@@ -101,17 +101,17 @@ def build_agent_config(
     return recursive_merge(base_config, overrides)
 
 
-def setup_fastcontext_in_container(env: DockerEnvironment, fastcontext_env_vars: dict[str, str]):
-    """Copy the FastContext wheel into the container and install its CLI."""
+def setup_aide_in_container(env: DockerEnvironment, aide_env_vars: dict[str, str]):
+    """Copy the Aide wheel into the container and install its CLI."""
     container_id = env.container_id
-    staging = "/tmp/fastcontext_setup"
+    staging = "/tmp/aide_setup"
 
     # Create staging dir
     env.execute({"command": f"mkdir -p {staging}"}, timeout=10)
 
     # Copy wheel
     subprocess.run(
-        ["docker", "cp", str(FASTCONTEXT_WHEEL), f"{container_id}:{staging}/fastcontext-0.1.0-py3-none-any.whl"],
+        ["docker", "cp", str(AIDE_WHEEL), f"{container_id}:{staging}/aide-0.1.0-py3-none-any.whl"],
         check=True, capture_output=True, timeout=60,
     )
 
@@ -122,21 +122,21 @@ apt-get update
 apt-get install -y curl ripgrep
 curl -LsSf https://astral.sh/uv/install.sh | sh
 source "$HOME/.local/bin/env"
-uv tool install {staging}/fastcontext-0.1.0-py3-none-any.whl --with requests
-ln -sf "$HOME/.local/bin/fastcontext" /usr/local/bin/fastcontext || true
-fastcontext --help >/dev/null
+uv tool install {staging}/aide-0.1.0-py3-none-any.whl --with requests
+ln -sf "$HOME/.local/bin/aide" /usr/local/bin/aide || true
+aide --help >/dev/null
 """.strip()
     result = env.execute({"command": install_cmd}, timeout=300)
     if result["returncode"] != 0:
-        raise RuntimeError(f"fastcontext setup failed: {result['output']}")
+        raise RuntimeError(f"aide setup failed: {result['output']}")
 
-    logger.info(f"fastcontext installed in container {container_id}")
+    logger.info(f"aide installed in container {container_id}")
 
 
-def extract_fastcontext_trajectories(env: DockerEnvironment, dest_dir: Path):
-    """Copy fastcontext ATIF trajectory files from container before cleanup.
+def extract_aide_trajectories(env: DockerEnvironment, dest_dir: Path):
+    """Copy aide ATIF trajectory files from container before cleanup.
 
-    fastcontext writes trajectories to /testbed/.fastcontext/trajectory_<timestamp>.jsonl
+    aide writes trajectories to /testbed/.aide/trajectory_<timestamp>.jsonl
     inside the container. This function extracts them to the host for analysis.
     """
     container_id = env.container_id
@@ -145,17 +145,17 @@ def extract_fastcontext_trajectories(env: DockerEnvironment, dest_dir: Path):
     dest_dir.mkdir(parents=True, exist_ok=True)
     try:
         result = subprocess.run(
-            ["docker", "cp", f"{container_id}:/testbed/.fastcontext/.", str(dest_dir)],
+            ["docker", "cp", f"{container_id}:/testbed/.aide/.", str(dest_dir)],
             capture_output=True, timeout=30,
         )
         if result.returncode == 0:
             # Count extracted files
             traj_files = list(dest_dir.glob("trajectory_*.json*"))
-            logger.info(f"Extracted {len(traj_files)} fastcontext trajectory file(s) to {dest_dir}")
+            logger.info(f"Extracted {len(traj_files)} aide trajectory file(s) to {dest_dir}")
         else:
-            logger.debug("No fastcontext trajectories found in container (dir may not exist)")
+            logger.debug("No aide trajectories found in container (dir may not exist)")
     except Exception as e:
-        logger.warning(f"Failed to extract fastcontext trajectories: {e}")
+        logger.warning(f"Failed to extract aide trajectories: {e}")
 
 
 def process_instance(
@@ -163,8 +163,8 @@ def process_instance(
     config: dict,
     logs_dir: Path,
     output_path: Path,
-    fastcontext_env_vars: dict[str, str],
-    no_fastcontext: bool = False,
+    aide_env_vars: dict[str, str],
+    no_aide: bool = False,
 ) -> dict:
     """Process a single SWE-bench instance end-to-end."""
     instance_id = instance["instance_id"]
@@ -182,19 +182,19 @@ def process_instance(
     start_time = time.time()
 
     try:
-        # Create Docker environment with fastcontext env vars injected
+        # Create Docker environment with aide env vars injected
         env_config = config.get("environment", {}).copy()
         env_config["image"] = image_name
         env_config.pop("environment_class", None)
-        # Inject FASTCONTEXT_* env vars so they're available in every docker exec call
+        # Inject AIDE_* env vars so they're available in every docker exec call
         docker_env = env_config.get("env", {}).copy()
-        docker_env.update(fastcontext_env_vars)
+        docker_env.update(aide_env_vars)
         env_config["env"] = docker_env
         env = DockerEnvironment(**env_config)
 
-        # Install fastcontext in the container (skip in baseline mode)
-        if not no_fastcontext:
-            setup_fastcontext_in_container(env, fastcontext_env_vars)
+        # Install aide in the container (skip in baseline mode)
+        if not no_aide:
+            setup_aide_in_container(env, aide_env_vars)
 
         # Create model and agent
         model = get_model(config=config.get("model", {}))
@@ -236,10 +236,10 @@ def process_instance(
                 },
             )
 
-        # Extract fastcontext trajectories before container cleanup
-        if env is not None and not no_fastcontext:
-            fastcontext_traj_dest = instance_log_dir / "fastcontext_trajs"
-            extract_fastcontext_trajectories(env, fastcontext_traj_dest)
+        # Extract aide trajectories before container cleanup
+        if env is not None and not no_aide:
+            aide_traj_dest = instance_log_dir / "aide_trajs"
+            extract_aide_trajectories(env, aide_traj_dest)
 
         # Update predictions file (SWE-bench format)
         pred_entry = {
@@ -278,17 +278,17 @@ def load_benchmark_data(bench: str) -> list[dict]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Benchmark mini-swe-agent + fastcontext on SWE-bench")
+    parser = argparse.ArgumentParser(description="Benchmark mini-swe-agent + aide on SWE-bench")
     parser.add_argument("--bench", type=str, default="swebench-multilingual",
                         help="Benchmark dataset name or path to JSONL file")
-    parser.add_argument("--experiment", type=str, default="mini-swe-agent-fastcontext",
+    parser.add_argument("--experiment", type=str, default="mini-swe-agent-aide",
                         help="Experiment name")
     parser.add_argument("--config", type=str, default=None,
-                        help="Path to model config .env file (main agent + fastcontext)")
+                        help="Path to model config .env file (main agent + aide)")
     parser.add_argument("--agent-config", type=str, default=None,
                         help="Path to mini-swe-agent YAML config. Defaults to a bundled prompts/*.yaml config")
     parser.add_argument("--baseline-agent-config", type=str, default=None,
-                        help="Path to mini-swe-agent YAML config used with --no-fastcontext")
+                        help="Path to mini-swe-agent YAML config used with --no-aide")
     parser.add_argument("--logs-dir", type=str, default="logs",
                         help="Directory to save agent trajectories")
     parser.add_argument("--output", "-o", type=str, default="preds.json",
@@ -301,8 +301,8 @@ def main():
                         help="Filter instance IDs by regex")
     parser.add_argument("--redo-existing", action="store_true",
                         help="Re-run instances that already have predictions")
-    parser.add_argument("--no-fastcontext", action="store_true",
-                        help="Baseline mode: skip fastcontext installation, use vanilla config")
+    parser.add_argument("--no-aide", action="store_true",
+                        help="Baseline mode: skip aide installation, use vanilla config")
     args = parser.parse_args()
 
     logs_base = Path(args.logs_dir)
@@ -318,9 +318,9 @@ def main():
     )
 
     # Load mini-swe-agent prompt/config YAML.
-    if args.no_fastcontext:
+    if args.no_aide:
         if not args.baseline_agent_config:
-            logger.error("--baseline-agent-config is required when using --no-fastcontext")
+            logger.error("--baseline-agent-config is required when using --no-aide")
             sys.exit(1)
         config_path = resolve_repo_path(args.baseline_agent_config)
     else:
@@ -343,7 +343,7 @@ def main():
         if value := env_config.get(key):
             os.environ[key] = value
 
-    # Split config into main agent vs fastcontext
+    # Split config into main agent vs aide
     main_model_name = env_config.get("MAIN_MODEL", "")
     if not main_model_name:
         logger.error("MAIN_MODEL is required in config file")
@@ -367,11 +367,11 @@ def main():
     if api_key := env_config.get("ANTHROPIC_API_KEY"):
         main_model_kwargs["api_key"] = api_key
 
-    # Build fastcontext env vars (FASTCONTEXT_* prefix)
-    fastcontext_env_vars = {}
+    # Build aide env vars (AIDE_* prefix)
+    aide_env_vars = {}
     for key, value in env_config.items():
-        if key.startswith("FASTCONTEXT_"):
-            fastcontext_env_vars[key] = value
+        if key.startswith("AIDE_"):
+            aide_env_vars[key] = value
 
     # Build final config
     main_model_class = env_config.get("MAIN_MODEL_CLASS", None)
@@ -406,14 +406,14 @@ def main():
     logs_dir = Path(args.logs_dir) / args.experiment
     logs_dir.mkdir(parents=True, exist_ok=True)
 
-    # Check fastcontext wheel exists (skip in baseline mode)
-    if not args.no_fastcontext and not FASTCONTEXT_WHEEL.exists():
-        logger.error(f"fastcontext wheel not found at {FASTCONTEXT_WHEEL}. Run: cd {REPO_ROOT} && uv build")
+    # Check aide wheel exists (skip in baseline mode)
+    if not args.no_aide and not AIDE_WHEEL.exists():
+        logger.error(f"aide wheel not found at {AIDE_WHEEL}. Run: cd {REPO_ROOT} && uv build")
         sys.exit(1)
 
     logger.info(f"Starting {len(samples)} instances with {args.workers} workers")
     logger.info(f"Main model: {main_model_name}")
-    logger.info(f"fastcontext: {'disabled (baseline)' if args.no_fastcontext else fastcontext_env_vars.get('FASTCONTEXT_MODEL', 'N/A')}")
+    logger.info(f"aide: {'disabled (baseline)' if args.no_aide else aide_env_vars.get('AIDE_MODEL', 'N/A')}")
     logger.info(f"Logs: {logs_dir}")
     logger.info(f"Output: {output_path}")
 
@@ -428,8 +428,8 @@ def main():
                 config=config,
                 logs_dir=logs_dir,
                 output_path=output_path,
-                fastcontext_env_vars=fastcontext_env_vars,
-                no_fastcontext=args.no_fastcontext,
+                aide_env_vars=aide_env_vars,
+                no_aide=args.no_aide,
             ): sample["instance_id"]
             for sample in samples
         }

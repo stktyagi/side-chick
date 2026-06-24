@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Simple benchmark: python3 bench.py [task_ids..]
 
-Reads fastcontext creds from your ~/.config/opencode/opencode.json.
+Reads aide creds from your ~/.config/opencode/opencode.json.
 Runs all tasks (or specified IDs) through MCP + baseline, collects trajectory + tokens + diffs.
 """
 import json, os, shutil, subprocess, sys, time
@@ -11,8 +11,8 @@ from pathlib import Path
 HERE = Path(__file__).parent
 LINUX_VOLUME = "linux-repo"
 
-def load_user_fastcontext_config():
-    """Read fastcontext MCP env vars from user's opencode config."""
+def load_user_aide_config():
+    """Read aide MCP env vars from user's opencode config."""
     paths = [
         Path.home() / ".config/opencode/opencode.json",
         HERE.parent / "opencode.json",
@@ -20,14 +20,14 @@ def load_user_fastcontext_config():
     for p in paths:
         if p.exists():
             c = json.loads(p.read_text())
-            mcp = c.get("mcp", {}).get("fastcontext", {})
+            mcp = c.get("mcp", {}).get("aide", {})
             env = mcp.get("env", {})
             if env.get("API_KEY"):
                 return env
     return {}
 
 def build_image():
-    subprocess.run(["docker","build","-t","fastcontext-test","-f",str(HERE/"Dockerfile"),str(HERE)], check=True)
+    subprocess.run(["docker","build","-t","aide-test","-f",str(HERE/"Dockerfile"),str(HERE)], check=True)
 
 def ensure_linux_volume():
     r = subprocess.run(["docker","volume","inspect",LINUX_VOLUME], capture_output=True)
@@ -41,10 +41,10 @@ def ensure_linux_volume():
 def run_container(task_file, mode, results_dir, fc_cfg, timeout):
     results_dir.mkdir(parents=True, exist_ok=True)
     env = {"TASK_FILE":"/task.json","LINUX_REPO":"/linux-repo","CONFIG_DIR":"/config","RESULTS_DIR":"/results","MODEL":"opencode/deepseek-v4-flash-free","TIMEOUT":str(timeout)}
-    if fc_cfg.get("MODEL"): env["FASTCONTEXT_MODEL"] = fc_cfg["MODEL"]
-    if fc_cfg.get("BASE_URL"): env["FASTCONTEXT_BASE_URL"] = fc_cfg["BASE_URL"]
-    if fc_cfg.get("API_KEY"): env["FASTCONTEXT_API_KEY"] = fc_cfg["API_KEY"]
-    if fc_cfg.get("EXTRA_HEADERS"): env["FASTCONTEXT_EXTRA_HEADERS"] = fc_cfg["EXTRA_HEADERS"]
+    if fc_cfg.get("MODEL"): env["AIDE_MODEL"] = fc_cfg["MODEL"]
+    if fc_cfg.get("BASE_URL"): env["AIDE_BASE_URL"] = fc_cfg["BASE_URL"]
+    if fc_cfg.get("API_KEY"): env["AIDE_API_KEY"] = fc_cfg["API_KEY"]
+    if fc_cfg.get("EXTRA_HEADERS"): env["AIDE_EXTRA_HEADERS"] = fc_cfg["EXTRA_HEADERS"]
 
     eflags = sum([["-e",f"{k}={v}"] for k,v in env.items()], [])
     mounts = [
@@ -52,13 +52,13 @@ def run_container(task_file, mode, results_dir, fc_cfg, timeout):
         "--mount",f"type=volume,source={LINUX_VOLUME},target=/linux-repo,ro",
         "--mount",f"type=bind,source={HERE/'inside'},target=/config,ro",
         "--mount",f"type=bind,source={HERE/'inside'/'run_single_test.sh'},target=/entrypoint.sh,ro",
-        "--mount",f"type=bind,source={HERE.parent.parent.parent},target=/fastcontext",
+        "--mount",f"type=bind,source={HERE.parent.parent.parent},target=/aide",
         "--mount",f"type=bind,source={results_dir},target=/results",
         "--mount","type=bind,source=/usr/bin/uv,target=/usr/local/bin/uv,ro",
         "--mount","type=bind,source=/usr/bin/opencode,target=/usr/local/bin/opencode,ro",
         "--mount","type=bind,source=/home/a/.local/share/opencode/auth.json,target=/root/.local/share/opencode/auth.json,ro",
     ]
-    cmd = ["docker","run","--rm", *eflags, *mounts, "fastcontext-test", mode]
+    cmd = ["docker","run","--rm", *eflags, *mounts, "aide-test", mode]
 
     start = time.time()
     try:
@@ -82,7 +82,7 @@ def run_verifier(task_file, mcp_diff, baseline_diff, expected_diff, output):
 
 def main():
     import argparse
-    ap = argparse.ArgumentParser(description="FastContext Benchmark")
+    ap = argparse.ArgumentParser(description="Aide Benchmark")
     ap.add_argument("task_ids", type=str, nargs="*", help="Task indices to run (default: all)")
     ap.add_argument("--no-build", action="store_true")
     ap.add_argument("--timeout", type=int, default=300)
@@ -90,9 +90,9 @@ def main():
     ap.add_argument("--parallel", type=int, default=1)
     args = ap.parse_args()
 
-    fc_cfg = load_user_fastcontext_config()
+    fc_cfg = load_user_aide_config()
     if not fc_cfg.get("API_KEY"):
-        print("ERROR: No fastcontext API key found in opencode config")
+        print("ERROR: No aide API key found in opencode config")
         sys.exit(1)
 
     if not args.no_build: build_image()

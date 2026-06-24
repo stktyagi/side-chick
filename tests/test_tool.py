@@ -1,8 +1,8 @@
 import asyncio
 import json
 
-from fastcontext.agent.tool.glob import GlobTool
-from fastcontext.agent.tool.grep import GrepTool
+from aide.agent.tool.glob import GlobTool
+from aide.agent.tool.grep import GrepTool
 
 
 def test_grep_tool():

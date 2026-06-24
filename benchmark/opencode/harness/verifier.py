@@ -110,7 +110,7 @@ Expected (ground truth):
 {diff_exp}
 ```
 
-Solution A (with fastcontext MCP):
+Solution A (with aide MCP):
 ```diff
 {diff_a}
 ```

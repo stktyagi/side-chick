@@ -1,10 +1,10 @@
-"""FastContext MCP Server — single `task` tool.
+"""Aide MCP Server — single `task` tool.
 
-Configurable via env vars (same as original FastContext):
+Configurable via env vars (same as original Aide):
   MODEL, API_KEY, BASE_URL, MAX_TOKENS, MAX_TURNS
 
 Usage:
-  fastcontext mcp --port 8931 --work-dir /path/to/repo
+  aide mcp --port 8931 --work-dir /path/to/repo
 """
 
 from __future__ import annotations
@@ -18,11 +18,11 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from fastcontext.agent.utils import get_final_answer, load_dotenv
+from aide.agent.utils import get_final_answer, load_dotenv
 
 logger = logging.getLogger(__name__)
 
-_SERVER_NAME = "FastContext"
+_SERVER_NAME = "Aide"
 
 
 def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None = None, verbose: bool = False, transport: str = "stdio") -> None:
@@ -55,11 +55,11 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
             timeout: Max seconds before giving up (default: no limit).
             work_dir: Project directory to explore (default: server startup dir).
         """
-        from fastcontext.agent.agent_factory import make_fastcontext_agent
+        from aide.agent.agent_factory import make_aide_agent
 
         wd = Path(work_dir).resolve() if work_dir else cwd
-        traj = f".fastcontext/mcp_trajectory_{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.jsonl"
-        agent = make_fastcontext_agent(trajectory_file=traj, work_dir=str(wd))
+        traj = f".aide/mcp_trajectory_{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.jsonl"
+        agent = make_aide_agent(trajectory_file=traj, work_dir=str(wd))
         mt = max_turns if max_turns != 0 else None
         try:
             if timeout and timeout > 0:
@@ -88,7 +88,7 @@ def run_server(host: str = "127.0.0.1", port: int = 8931, work_dir: str | None =
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="FastContext MCP Server")
+    parser = argparse.ArgumentParser(description="Aide MCP Server")
     parser.add_argument("--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1)")
     parser.add_argument("--port", "-p", type=int, default=8931, help="Port (default: 8931)")
     parser.add_argument("--work-dir", "-w", default=None, help="Working directory (default: cwd)")

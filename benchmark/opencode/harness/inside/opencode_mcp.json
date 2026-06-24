@@ -14,9 +14,9 @@
     "scout": { "model": "opencode/deepseek-v4-flash-free" }
   },
   "mcp": {
-    "fastcontext": {
+    "aide": {
       "type": "local",
-      "command": ["uv", "run", "--directory", "/fastcontext", "fastcontext", "mcp"],
+      "command": ["uv", "run", "--directory", "/aide", "aide", "mcp"],
       "enabled": true,
       "env": {
         "MODEL": "",

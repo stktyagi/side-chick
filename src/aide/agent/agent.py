@@ -1,10 +1,10 @@
 import asyncio
 from uuid import uuid4
 
-from fastcontext.agent.context import Context
-from fastcontext.agent.llm import LLM, Message, RequestyAPIError
-from fastcontext.agent.tool import ToolSet
-from fastcontext.agent.utils import get_final_answer
+from aide.agent.context import Context
+from aide.agent.llm import LLM, Message, RequestyAPIError
+from aide.agent.tool import ToolSet
+from aide.agent.utils import get_final_answer
 
 
 class Agent:

@@ -25,7 +25,7 @@ REPO_ROOT = HERE.parent.parent
 def build_image():
     print("=== Building Docker image ===")
     subprocess.run(
-        ["docker", "build", "-t", "fastcontext-test", "-f", str(HERE / "Dockerfile"), str(HERE)],
+        ["docker", "build", "-t", "aide-test", "-f", str(HERE / "Dockerfile"), str(HERE)],
         check=True,
     )
 
@@ -60,8 +60,8 @@ def ensure_linux_repo_volume():
 
 
 def run_container(task_file: Path, mode: str, results_dir: Path,
-                  model: str, fastcontext_model: str, fastcontext_base_url: str,
-                  fastcontext_api_key: str, fastcontext_headers: str | None,
+                  model: str, aide_model: str, aide_base_url: str,
+                  aide_api_key: str, aide_headers: str | None,
                   timeout: int) -> dict:
     """Run one container for one mode. Source prep done inside container."""
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -73,12 +73,12 @@ def run_container(task_file: Path, mode: str, results_dir: Path,
         "RESULTS_DIR": "/results",
         "MODEL": model,
         "TIMEOUT": str(timeout),
-        "FASTCONTEXT_MODEL": fastcontext_model,
-        "FASTCONTEXT_BASE_URL": fastcontext_base_url,
-        "FASTCONTEXT_API_KEY": fastcontext_api_key,
+        "AIDE_MODEL": aide_model,
+        "AIDE_BASE_URL": aide_base_url,
+        "AIDE_API_KEY": aide_api_key,
     }
-    if fastcontext_headers:
-        env["FASTCONTEXT_EXTRA_HEADERS"] = fastcontext_headers
+    if aide_headers:
+        env["AIDE_EXTRA_HEADERS"] = aide_headers
 
     env_flags = []
     for k, v in env.items():
@@ -89,7 +89,7 @@ def run_container(task_file: Path, mode: str, results_dir: Path,
         "--mount", f"type=volume,source={LINUX_REPO_VOLUME},target=/linux-repo,ro",
         "--mount", f"type=bind,source={HERE / 'inside'},target=/config,ro",
         "--mount", f"type=bind,source={HERE / 'inside' / 'run_single_test.sh'},target=/entrypoint.sh,ro",
-        "--mount", f"type=bind,source={REPO_ROOT},target=/fastcontext",
+        "--mount", f"type=bind,source={REPO_ROOT},target=/aide",
         "--mount", f"type=bind,source={results_dir},target=/results",
         "--mount", "type=bind,source=/usr/bin/uv,target=/usr/local/bin/uv,ro",
         "--mount", "type=bind,source=/usr/bin/opencode,target=/usr/local/bin/opencode,ro",
@@ -100,7 +100,7 @@ def run_container(task_file: Path, mode: str, results_dir: Path,
         "docker", "run", "--rm",
         *env_flags,
         *mounts,
-        "fastcontext-test",
+        "aide-test",
         mode,
     ]
 
@@ -191,10 +191,10 @@ def run_single_task(task_file: Path, args) -> dict:
                 mode=mode,
                 results_dir=mode_dir,
                 model=args.model,
-                fastcontext_model=args.fastcontext_model,
-                fastcontext_base_url=args.fastcontext_base_url,
-                fastcontext_api_key=args.fastcontext_api_key,
-                fastcontext_headers=args.fastcontext_headers,
+                aide_model=args.aide_model,
+                aide_base_url=args.aide_base_url,
+                aide_api_key=args.aide_api_key,
+                aide_headers=args.aide_headers,
                 timeout=args.timeout,
             )
             futures[future] = mode
@@ -258,18 +258,18 @@ def run_single_task(task_file: Path, args) -> dict:
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Run fastcontext benchmark harness")
+    ap = argparse.ArgumentParser(description="Run aide benchmark harness")
     ap.add_argument("--tasks-dir", type=Path, default=HERE.parent / "tasks_llm",
                     help="Directory with task JSONs")
     ap.add_argument("--task-ids", type=str, nargs="*",
                     help="Specific task indices to run (default: all)")
     ap.add_argument("--no-build", action="store_true")
     ap.add_argument("--model", default="opencode/deepseek-v4-flash-free")
-    ap.add_argument("--fastcontext-model", default=os.getenv("MODEL", "qwen/qwen3.6-27b"))
-    ap.add_argument("--fastcontext-base-url",
+    ap.add_argument("--aide-model", default=os.getenv("MODEL", "qwen/qwen3.6-27b"))
+    ap.add_argument("--aide-base-url",
                     default=os.getenv("BASE_URL", "https://api.groq.com/openai/v1"))
-    ap.add_argument("--fastcontext-api-key", default=os.getenv("API_KEY", ""))
-    ap.add_argument("--fastcontext-headers", default=os.getenv("EXTRA_HEADERS"))
+    ap.add_argument("--aide-api-key", default=os.getenv("API_KEY", ""))
+    ap.add_argument("--aide-headers", default=os.getenv("EXTRA_HEADERS"))
     ap.add_argument("--timeout", type=int, default=300)
     ap.add_argument("--output-dir", type=Path, default=HERE.parent / "results")
     ap.add_argument("--parallel-tasks", type=int, default=1,

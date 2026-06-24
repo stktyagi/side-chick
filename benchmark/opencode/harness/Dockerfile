@@ -15,5 +15,5 @@ RUN printf '#!/bin/bash\nset -euo pipefail\nexec bash /entrypoint.sh "$@"\n' > /
 #   - linux source at /source/
 #   - task JSON at /task.json
 #   - results at /results/
-#   - fastcontext repo at /fastcontext/
+#   - aide repo at /aide/
 ENTRYPOINT ["/run.sh"]

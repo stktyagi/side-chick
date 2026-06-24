@@ -36,18 +36,18 @@ touch "$WORKDIR/.extracted"
 
 # Setup opencode config
 if [ "$MODE" = "mcp" ]; then
-    echo "=== Mode: with fastcontext MCP ==="
-    echo "--- Syncing fastcontext dependencies ---"
-    uv sync --no-dev --directory /fastcontext 2>&1 | tail -3
+    echo "=== Mode: with aide MCP ==="
+    echo "--- Syncing aide dependencies ---"
+    uv sync --no-dev --directory /aide 2>&1 | tail -3
     python3 -c "
 import json, os
 with open('$CONFIG_DIR/opencode_mcp.json') as f:
     config = json.load(f)
-env = config['mcp']['fastcontext']['env']
-env['MODEL'] = os.environ.get('FASTCONTEXT_MODEL', '')
-env['BASE_URL'] = os.environ.get('FASTCONTEXT_BASE_URL', '')
-env['API_KEY'] = os.environ.get('FASTCONTEXT_API_KEY', '')
-extra = os.environ.get('FASTCONTEXT_EXTRA_HEADERS')
+env = config['mcp']['aide']['env']
+env['MODEL'] = os.environ.get('AIDE_MODEL', '')
+env['BASE_URL'] = os.environ.get('AIDE_BASE_URL', '')
+env['API_KEY'] = os.environ.get('AIDE_API_KEY', '')
+extra = os.environ.get('AIDE_EXTRA_HEADERS')
 if extra:
     env['EXTRA_HEADERS'] = extra
 else:
@@ -140,7 +140,7 @@ with open(tokens_file) as f:
 
 # Sum up tokens from all MCP sub-agent trajectories
 mcp_in = mcp_out = mcp_reason = 0
-for tj in glob.glob(os.path.join(workdir, '.fastcontext', 'mcp_trajectory_*.jsonl')):
+for tj in glob.glob(os.path.join(workdir, '.aide', 'mcp_trajectory_*.jsonl')):
     with open(tj) as f:
         for line in f:
             line = line.strip()

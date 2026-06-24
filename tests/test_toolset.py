@@ -1,9 +1,9 @@
-from fastcontext.agent.llm import FunctionCall, Message
-from fastcontext.agent.tool import ToolSet
+from aide.agent.llm import FunctionCall, Message
+from aide.agent.tool import ToolSet
 
 
 async def test_toolset():
-    from fastcontext.agent.tool.read import ReadTool
+    from aide.agent.tool.read import ReadTool
 
     toolset = ToolSet(tools=[ReadTool()])
     schema_list = toolset.schema_list()
@@ -37,9 +37,9 @@ async def test_toolset():
 async def tools_schema_list():
     import json
 
-    from fastcontext.agent.tool.glob import GlobTool
-    from fastcontext.agent.tool.grep import GrepTool
-    from fastcontext.agent.tool.read import ReadTool
+    from aide.agent.tool.glob import GlobTool
+    from aide.agent.tool.grep import GrepTool
+    from aide.agent.tool.read import ReadTool
 
     toolset = ToolSet(tools=[GrepTool(), GlobTool(), ReadTool()], work_dir="/workspace")
     schema_list = toolset.schema_list()

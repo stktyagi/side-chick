@@ -59,7 +59,7 @@ else
 fi
 
 # --- Install the package ---
-info "Installing fastcontext..."
+info "Installing aide..."
 uv tool install "$REPO_DIR"
 
 # --- Create .env.example ---
@@ -79,22 +79,22 @@ EOF
 fi
 
 echo ""
-info "Installation complete! Run 'fastcontext --help' to get started."
+info "Installation complete! Run 'aide --help' to get started."
 echo ""
 echo "Next steps:"
 echo "  1. Edit .env with your model endpoint details."
-echo "  2. Run fastcontext in any repository:"
-echo "     fastcontext --query \"your exploration query\" --max-turns 6"
+echo "  2. Run aide in any repository:"
+echo "     aide --query \"your exploration query\" --max-turns 6"
 echo ""
-echo "  3. To use FastContext as an MCP tool in opencode, save the"
+echo "  3. To use Aide as an MCP tool in opencode, save the"
 echo "     following to ~/.config/opencode/opencode.json:"
 echo ""
 echo '{'
 echo '  "$schema": "https://opencode.ai/config.json",'
 echo '  "mcp": {'
-echo '    "fastcontext": {'
+echo '    "aide": {'
 echo '      "type": "local",'
-echo '      "command": ["uv", "tool", "run", "fastcontext", "mcp"],'
+echo '      "command": ["uv", "tool", "run", "aide", "mcp"],'
 echo '      "enabled": true'
 echo '    }'
 echo '  },'
@@ -103,30 +103,30 @@ echo '    "mcp_timeout": 600000'
 echo '  }'
 echo '}'
 echo ""
-echo "     Then set the env vars in the file, or let fastcontext load"
-echo '     them from ~/.config/fastcontext/env.'
+echo "     Then set the env vars in the file, or let aide load"
+echo '     them from ~/.config/aide/env.'
 echo ""
-echo "  4. To use FastContext as an MCP tool in Claude Code, save the"
+echo "  4. To use Aide as an MCP tool in Claude Code, save the"
 echo "     following to ~/.claude/settings.json:"
 echo ""
 echo '{'
 echo '  "mcpServers": {'
-echo '    "fastcontext": {'
+echo '    "aide": {'
 echo '      "command": "uv",'
-echo '      "args": ["tool", "run", "fastcontext", "mcp"],'
+echo '      "args": ["tool", "run", "aide", "mcp"],'
 echo '      "env": {}'
 echo '    }'
 echo '  }'
 echo '}'
 echo ""
-echo "  5. To use FastContext as an MCP tool in Codex CLI, save the"
+echo "  5. To use Aide as an MCP tool in Codex CLI, save the"
 echo "     following to ~/.codex/settings.json:"
 echo ""
 echo '{'
 echo '  "mcpServers": {'
-echo '    "fastcontext": {'
+echo '    "aide": {'
 echo '      "command": "uv",'
-echo '      "args": ["tool", "run", "fastcontext", "mcp"],'
+echo '      "args": ["tool", "run", "aide", "mcp"],'
 echo '      "env": {}'
 echo '    }'
 echo '  }'

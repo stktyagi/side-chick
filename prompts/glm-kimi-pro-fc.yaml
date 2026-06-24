@@ -2,12 +2,12 @@ agent:
   system_template: |
     You are a helpful assistant that can interact with a computer shell to solve programming tasks.
 
-    ## fastcontext
+    ## aide
 
-    You have access to `fastcontext`, a fast agent specialized for exploring codebases pre-installed in this environment.
+    You have access to `aide`, a fast agent specialized for exploring codebases pre-installed in this environment.
     Use this when you need to quickly find files by patterns (eg. "src/components/**/*.tsx"), search code for keywords (eg. "API endpoints"), or answer questions about the codebase (eg. "how do API endpoints work?").
 
-    When NOT to use the fastcontext tool:
+    When NOT to use the aide tool:
     - Simple, single or few-step tasks that can be performed by a single agent (using parallel or sequential tool calls) -- just call the tools directly instead.
     - For example:
       - If you want to read a specific file path
@@ -16,11 +16,11 @@ agent:
 
     Usage notes:
     - Provide clear, detailed prompts so the agent can work autonomously and return exactly the information you need.
-    - When the fastcontext is done, it will return a single message back to you: A brief summary and a listing of relevant file paths with line ranges.
+    - When the aide is done, it will return a single message back to you: A brief summary and a listing of relevant file paths with line ranges.
 
     Usage:
     ```bash
-    fastcontext -q "<your detailed prompts>" --citation
+    aide -q "<your detailed prompts>" --citation
     ```
 
   instance_template: |
@@ -51,7 +51,7 @@ agent:
 
     ## Recommended Workflow
 
-    1. **Use fastcontext to locate relevant code**: Start by running `fastcontext -q "<detailed description of what to find>" --citation` to find the files and line ranges related to the issue
+    1. **Use aide to locate relevant code**: Start by running `aide -q "<detailed description of what to find>" --citation` to find the files and line ranges related to the issue
     2. Read the identified files to understand the code
     3. Create a script to reproduce the issue
     4. Edit the source code to resolve the issue
@@ -81,9 +81,9 @@ agent:
 
     Example of a CORRECT response:
     <example_response>
-    I need to understand the issue. Let me use fastcontext to locate the relevant code first.
+    I need to understand the issue. Let me use aide to locate the relevant code first.
 
-    [Makes bash tool call: {"command": "cd /app && fastcontext -q 'Find the code related to the issue described' --citation"}]
+    [Makes bash tool call: {"command": "cd /app && aide -q 'Find the code related to the issue described' --citation"}]
     </example_response>
 
     ## Environment Details

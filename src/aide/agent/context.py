@@ -2,7 +2,7 @@ import json
 import os
 import aiofiles
 
-from fastcontext.agent.llm import Message
+from aide.agent.llm import Message
 
 
 class Context:

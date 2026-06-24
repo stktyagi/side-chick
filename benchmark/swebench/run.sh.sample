@@ -13,8 +13,8 @@ source $HOME/.local/bin/env
 # uv venv --python 3.12
 # source .venv/bin/activate
 
-# install fastcontext
-uv tool install fastcontext-0.1.0-py3-none-any.whl --with requests
+# install aide
+uv tool install aide-0.1.0-py3-none-any.whl --with requests
 
 export BASE_URL=
 export MODEL=
@@ -27,4 +27,4 @@ traj_file=${2}
 mkdir -p $(dirname $traj_file)
 
 cd /testbed
-fastcontext -q "$(cat $query_file)" --max-turns 15 --traj $traj_file
+aide -q "$(cat $query_file)" --max-turns 15 --traj $traj_file

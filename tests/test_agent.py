@@ -1,9 +1,9 @@
 import os
 
-from fastcontext.agent.agent import Agent
-from fastcontext.agent.llm import LLM
-from fastcontext.agent.tool import ToolSet
-from fastcontext.agent.tool.read import ReadTool
+from aide.agent.agent import Agent
+from aide.agent.llm import LLM
+from aide.agent.tool import ToolSet
+from aide.agent.tool.read import ReadTool
 
 
 async def test_agent():
@@ -35,11 +35,11 @@ async def test_agent():
 
 
 async def _run_agent(instance: dict, agent_config: dict) -> dict:
-    from fastcontext.agent.agent_factory import make_fastcontext_agent
+    from aide.agent.agent_factory import make_aide_agent
 
     max_turns = int(agent_config.get("max_turns", 4))
-    agent = make_fastcontext_agent(
-        trajectory_file=agent_config.get("trajectory_file", ".fastcontext/trajectory.jsonl"),
+    agent = make_aide_agent(
+        trajectory_file=agent_config.get("trajectory_file", ".aide/trajectory.jsonl"),
         work_dir=agent_config.get("work_dir", "/testbed"),
     )
 
